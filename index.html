@@ -623,6 +623,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderChart();
       renderSingleBatchCharts();
+      updateAutoRorFields();
       renderBatchCards();
       status.textContent = "已自動保存到此瀏覽器。";
     }
@@ -660,6 +661,29 @@
         .map((log) => parseTimeToSeconds(log.time))
         .find((seconds) => Number.isFinite(seconds));
       return formatDuration(Number.isFinite(lastSeconds) ? lastSeconds + 30 : 0);
+    }
+
+    function getAutoRor(batch, logIndex) {
+      const current = batch.logs[logIndex];
+      const previous = [...batch.logs]
+        .slice(0, logIndex)
+        .reverse()
+        .find((log) => Number.isFinite(parseTimeToSeconds(log.time)) && Number.isFinite(Number(log.temp)) && Number(log.temp) > 0);
+      const currentTime = parseTimeToSeconds(current?.time);
+      const previousTime = parseTimeToSeconds(previous?.time);
+      const currentTemp = Number(current?.temp);
+      const previousTemp = Number(previous?.temp);
+      if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime) || currentTime <= previousTime) return "";
+      if (!Number.isFinite(currentTemp) || !Number.isFinite(previousTemp) || currentTemp <= 0 || previousTemp <= 0) return "";
+      return (((currentTemp - previousTemp) / (currentTime - previousTime)) * 60).toFixed(1);
+    }
+
+    function updateAutoRorFields() {
+      document.querySelectorAll("[data-ror]").forEach((node) => {
+        const batchIndex = Number(node.dataset.ror);
+        const logIndex = Number(node.dataset.index);
+        node.value = getAutoRor(state.batches[batchIndex], logIndex);
+      });
     }
 
     function renderBeanFields() {
@@ -771,7 +795,7 @@
                     <tr>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></td>
-                      <td><input data-log="${index}" data-index="${logIndex}" data-field="ror" value="${escapeHtml(log.ror)}" inputmode="decimal"></td>
+                      <td><input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(getAutoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></td>
                       <td><button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button></td>
                     </tr>
@@ -1028,7 +1052,7 @@
         batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
 
         csv += "\n詳細數據\n時間,溫度(°C),RoR,備註\n";
-        batch.logs.forEach((log) => csv += [log.time, log.temp, log.ror, log.note].map(csvValue).join(",") + "\n");
+        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.note].map(csvValue).join(",") + "\n");
       });
 
       csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,乾淨度,整體分數,判斷\n";

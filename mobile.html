@@ -488,6 +488,7 @@
     function save() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderCharts();
+      updateRorFields();
       renderCupping();
       status.textContent = "已自動保存";
     }
@@ -515,6 +516,29 @@
     function nextLogTime(batch) {
       const seconds = [...batch.logs].reverse().map((log) => parseTimeToSeconds(log.time)).find((item) => Number.isFinite(item));
       return formatDuration(Number.isFinite(seconds) ? seconds + 30 : 0);
+    }
+
+    function autoRor(batch, logIndex) {
+      const current = batch.logs[logIndex];
+      const previous = [...batch.logs]
+        .slice(0, logIndex)
+        .reverse()
+        .find((log) => Number.isFinite(parseTimeToSeconds(log.time)) && Number.isFinite(Number(log.temp)) && Number(log.temp) > 0);
+      const currentTime = parseTimeToSeconds(current?.time);
+      const previousTime = parseTimeToSeconds(previous?.time);
+      const currentTemp = Number(current?.temp);
+      const previousTemp = Number(previous?.temp);
+      if (!Number.isFinite(currentTime) || !Number.isFinite(previousTime) || currentTime <= previousTime) return "";
+      if (!Number.isFinite(currentTemp) || !Number.isFinite(previousTemp) || currentTemp <= 0 || previousTemp <= 0) return "";
+      return (((currentTemp - previousTemp) / (currentTime - previousTime)) * 60).toFixed(1);
+    }
+
+    function updateRorFields() {
+      document.querySelectorAll("[data-ror]").forEach((node) => {
+        const batchIndex = Number(node.dataset.ror);
+        const logIndex = Number(node.dataset.index);
+        node.value = autoRor(state.batches[batchIndex], logIndex);
+      });
     }
 
     function syncFields() {
@@ -593,7 +617,7 @@
                 <div class="mini-grid">
                   <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></label>
                   <label>溫度<input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></label>
-                  <label>RoR<input data-log="${index}" data-index="${logIndex}" data-field="ror" value="${escapeHtml(log.ror)}" inputmode="decimal"></label>
+                  <label>RoR<input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(autoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></label>
                   <label>備註<input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></label>
                 </div>
               </div>
@@ -696,7 +720,7 @@
         csv += `\n=== ${batch.name || `第 ${index + 1} 鍋`} ===\n`;
         [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
         csv += "\n詳細數據\n時間,溫度,RoR,備註\n";
-        batch.logs.forEach((log) => csv += [log.time, log.temp, log.ror, log.note].map(csvValue).join(",") + "\n");
+        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, autoRor(batch, logIndex), log.note].map(csvValue).join(",") + "\n");
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
