@@ -326,29 +326,10 @@
         <label>生豆品項
           <input data-field="bean.beanItem" type="text" placeholder="例如：耶加雪菲 水洗">
         </label>
-        <label>來源 / 批號
-          <input data-field="bean.source" type="text">
-        </label>
         <label>處理法
           <input data-field="bean.process" type="text">
         </label>
-        <label>品種 / 海拔
-          <input data-field="bean.variety" type="text">
-        </label>
-        <label>目標風味
-          <input data-field="bean.targetFlavor" type="text">
-        </label>
-        <label class="wide">比較重點
-          <select data-field="bean.focus">
-            <option value="">選擇</option>
-            <option>發展時間差異</option>
-            <option>火力曲線差異</option>
-            <option>風門調整差異</option>
-            <option>下豆溫差異</option>
-            <option>烘焙度差異</option>
-          </select>
-        </label>
-        <label class="wide">試烘假設
+        <label class="wide">假設條件
           <textarea data-field="bean.hypothesis" placeholder="記錄 2-3 鍋想比較的烘法假設。"></textarea>
         </label>
       </div>
@@ -398,9 +379,10 @@
   <script>
     const STORAGE_KEY = "coffee-roast-compare-v2";
     const colors = ["#a85513", "#14746f", "#2454a6"];
-    const milestoneNames = ["入豆", "回溫點", "轉黃", "一爆開始", "一爆結束", "下豆"];
-    const beanFields = ["date", "beanItem", "source", "process", "variety", "targetFlavor", "focus", "hypothesis"];
+    const milestoneNames = ["入豆", "回溫點", "轉黃", "肉桂色", "一爆開始", "一爆結束", "下豆"];
+    const beanFields = ["date", "beanItem", "process", "hypothesis"];
     const cuppingFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish", "cleanCup", "score", "judgement"];
+    const MAX_CHART_TIME = 13 * 60;
 
     const status = document.querySelector("#status");
     const chart = document.querySelector("#chart");
@@ -416,7 +398,9 @@
       return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     }
     function parseTimeToSeconds(value) {
-      const parts = String(value || "").trim().split(":").map(Number);
+      const text = String(value || "").trim();
+      if (!text) return null;
+      const parts = text.split(":").map(Number);
       if (parts.some(Number.isNaN)) return null;
       if (parts.length === 2) return parts[0] * 60 + parts[1];
       if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
@@ -430,10 +414,10 @@
       return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     }
     function initialLogs() {
-      return Array.from({ length: 31 }, (_, index) => ({ time: formatDuration(index * 30), temp: "", ror: "", note: index === 0 ? "入豆" : "" }));
+      return Array.from({ length: 27 }, (_, index) => ({ time: formatDuration(index * 30), temp: "", ror: "", note: index === 0 ? "入豆" : "" }));
     }
     function initialMilestones() {
-      return milestoneNames.map((name) => ({ name, time: "", temp: "", note: "" }));
+      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", temp: "", note: "" }));
     }
     function createBatch(index) {
       return {
@@ -456,7 +440,7 @@
     }
     function createState() {
       return {
-        bean: { date: today(), beanItem: "", source: "", process: "", variety: "", targetFlavor: "", focus: "", hypothesis: "" },
+        bean: { date: today(), beanItem: "", process: "", hypothesis: "" },
         batches: [createBatch(0), createBatch(1), createBatch(2)],
         activeBatch: 0,
         decision: { winner: "", conclusion: "" }
@@ -469,12 +453,12 @@
       const fresh = createState();
       if (!saved || typeof saved !== "object") return fresh;
       return {
-        bean: { ...fresh.bean, ...(saved.bean || {}) },
+        bean: Object.fromEntries(beanFields.map((field) => [field, saved.bean?.[field] ?? fresh.bean[field]])),
         batches: fresh.batches.map((batch, index) => ({
           ...batch,
           ...(saved.batches?.[index] || {}),
-          milestones: Array.isArray(saved.batches?.[index]?.milestones) ? saved.batches[index].milestones : batch.milestones,
-          logs: Array.isArray(saved.batches?.[index]?.logs) ? saved.batches[index].logs : batch.logs,
+          milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
+          logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
           cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
         })),
         activeBatch: Number.isInteger(saved.activeBatch) ? Math.max(0, Math.min(2, saved.activeBatch)) : fresh.activeBatch,
@@ -484,6 +468,23 @@
     function load() {
       try { state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")); }
       catch { state = createState(); }
+    }
+    function normalizeMilestones(savedMilestones, freshMilestones) {
+      if (!Array.isArray(savedMilestones)) return freshMilestones;
+      return freshMilestones.map((fresh) => {
+        const saved = savedMilestones.find((item) => item?.name === fresh.name);
+        const merged = { ...fresh, ...(saved || {}) };
+        if (merged.name === "入豆" && !merged.time) merged.time = "00:00";
+        return merged;
+      });
+    }
+    function normalizeLogs(savedLogs, freshLogs) {
+      if (!Array.isArray(savedLogs)) return freshLogs;
+      const logs = savedLogs.filter((log) => {
+        const time = parseTimeToSeconds(log?.time);
+        return Number.isFinite(time) && time <= MAX_CHART_TIME;
+      });
+      return logs.length ? logs : freshLogs;
     }
     function save() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -514,16 +515,29 @@
         .sort((a, b) => a.time - b.time);
     }
 
+    function chartEndTime(batch) {
+      const dropTime = milestoneTime(batch, "下豆");
+      if (Number.isFinite(dropTime) && dropTime > 0) return Math.min(dropTime, MAX_CHART_TIME);
+      return MAX_CHART_TIME;
+    }
+
+    function chartPoints(batch) {
+      const endTime = chartEndTime(batch);
+      return batchPoints(batch).filter((point) => point.time <= endTime);
+    }
+
     function rorPoints(batch) {
+      const endTime = chartEndTime(batch);
       return batch.logs
         .map((log, index) => ({ time: parseTimeToSeconds(log.time), ror: Number(autoRor(batch, index)) }))
-        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.ror))
+        .filter((point) => Number.isFinite(point.time) && point.time <= endTime && Number.isFinite(point.ror))
         .sort((a, b) => a.time - b.time);
     }
 
     function nextLogTime(batch) {
       const seconds = [...batch.logs].reverse().map((log) => parseTimeToSeconds(log.time)).find((item) => Number.isFinite(item));
-      return formatDuration(Number.isFinite(seconds) ? seconds + 30 : 0);
+      const nextSeconds = Number.isFinite(seconds) ? seconds + 30 : 0;
+      return nextSeconds <= MAX_CHART_TIME ? formatDuration(nextSeconds) : "";
     }
 
     function autoRor(batch, logIndex) {
@@ -680,7 +694,7 @@
       }
       const all = series.flatMap((item) => item.points);
       const allRor = series.flatMap((item) => rorPoints(item.batch));
-      const maxTime = Math.max(...all.map((point) => point.time), 900);
+      const maxTime = Math.min(Math.max(...series.map((item) => item.endTime), 60), MAX_CHART_TIME);
       const minTemp = Math.floor((Math.min(...all.map((point) => point.temp), 80) - 10) / 10) * 10;
       const maxTemp = Math.ceil((Math.max(...all.map((point) => point.temp), 220) + 10) / 10) * 10;
       const minRor = Math.min(0, Math.floor((Math.min(...allRor.map((point) => point.ror), 0) - 2) / 2) * 2);
@@ -707,12 +721,20 @@
       series.forEach(({ batch, index, points }) => {
         const path = points.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`).join(" ");
         svg.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        const labelOffsets = [
+          { dx: 0, dy: -18, anchor: "middle" },
+          { dx: 28, dy: 3, anchor: "start" },
+          { dx: -28, dy: 22, anchor: "end" }
+        ];
+        const labelOffset = labelOffsets[index] || labelOffsets[0];
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time), y = yScale(point.temp);
           const label = point.note || (pointIndex === points.length - 1 ? `${point.temp.toFixed(0)}°` : "");
           svg.innerHTML += `<circle cx="${x}" cy="${y}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
-          if (label) svg.innerHTML += `<text x="${x}" y="${y - 12 - index * 8}" text-anchor="middle" fill="${colors[index]}" font-size="12" font-weight="700">${escapeHtml(label)}</text>`;
+          if (label) svg.innerHTML += `<text x="${x + labelOffset.dx}" y="${y + labelOffset.dy}" text-anchor="${labelOffset.anchor}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(label)}</text>`;
         });
+        const endPoint = points[points.length - 1];
+        svg.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10)}" y="${yScale(endPoint.temp) + (index - 1) * 18}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
         const rors = rorPoints(batch);
         if (rors.length >= 2) {
           const rorPath = rors.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${rorYScale(point.ror).toFixed(1)}`).join(" ");
@@ -723,7 +745,7 @@
     }
 
     function renderCharts() {
-      const series = state.batches.map((batch, index) => ({ batch, index, points: batchPoints(batch) })).filter((item) => item.batch.enabled && item.points.length >= 2);
+      const series = state.batches.map((batch, index) => ({ batch, index, points: chartPoints(batch), endTime: chartEndTime(batch) })).filter((item) => item.batch.enabled && item.points.length >= 2);
       drawChart(chart, series, "三鍋曲線比較");
       document.querySelector("#chart-toggles").innerHTML = state.batches.map((batch, index) => `
         <label class="checkline">
@@ -738,7 +760,7 @@
       if (!svg) return;
       const index = state.activeBatch;
       const batch = state.batches[index];
-      drawChart(svg, [{ batch, index, points: batchPoints(batch) }].filter((item) => item.points.length >= 2), `${batch.name || `第 ${index + 1} 鍋`} 單鍋曲線`);
+      drawChart(svg, [{ batch, index, points: chartPoints(batch), endTime: chartEndTime(batch) }].filter((item) => item.points.length >= 2), `${batch.name || `第 ${index + 1} 鍋`} 單鍋曲線`);
     }
 
     function renderAll() {
@@ -753,7 +775,7 @@
     function exportCSV() {
       let csv = "\uFEFF";
       csv += "=== 豆子與試烘目標 ===\n";
-      [["試烘日期", state.bean.date], ["生豆品項", state.bean.beanItem], ["來源", state.bean.source], ["處理法", state.bean.process], ["品種 / 海拔", state.bean.variety], ["目標風味", state.bean.targetFlavor], ["比較重點", state.bean.focus], ["試烘假設", state.bean.hypothesis]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+      [["試烘日期", state.bean.date], ["生豆品項", state.bean.beanItem], ["處理法", state.bean.process], ["假設條件", state.bean.hypothesis]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
       state.batches.forEach((batch, index) => {
         csv += `\n=== ${batch.name || `第 ${index + 1} 鍋`} ===\n`;
         [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
@@ -802,7 +824,12 @@
       const add = event.target.closest("[data-add-log]");
       if (add) {
         const batch = state.batches[Number(add.dataset.addLog)];
-        batch.logs.push({ time: nextLogTime(batch), temp: "", ror: "", note: "" });
+        const nextTime = nextLogTime(batch);
+        if (!nextTime) {
+          status.textContent = "已到 13:00，不再新增時間列。";
+          return;
+        }
+        batch.logs.push({ time: nextTime, temp: "", ror: "", note: "" });
         renderBatchPanel();
         save();
         return;
