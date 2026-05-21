@@ -580,8 +580,22 @@
     }
 
     function milestoneTime(batch, name) {
+      const logStage = batch.logs.find((log) => log.stage === name);
+      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.time);
+      if (Number.isFinite(logStageTime)) return logStageTime;
       const milestone = batch.milestones.find((item) => item.name === name);
       return parseTimeToSeconds(milestone?.time);
+    }
+
+    function syncLogStageTime(batch, logIndex) {
+      const log = batch.logs[logIndex];
+      if (!log || !log.stage) return;
+      if (!log.stageTime) log.stageTime = log.time || "";
+      const milestone = batch.milestones.find((item) => item.name === log.stage);
+      if (milestone) {
+        if (!milestone.time) milestone.time = log.stageTime || log.time || "";
+        if (!milestone.temp) milestone.temp = log.temp || "";
+      }
     }
 
     function updateRorFields() {
@@ -820,13 +834,27 @@
       if (field?.startsWith("decision.")) state.decision[field.split(".")[1]] = event.target.value;
       if (event.target.dataset.batchField) state.batches[Number(event.target.dataset.batch)][event.target.dataset.batchField] = event.target.value;
       if (event.target.dataset.milestone) state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = event.target.value;
-      if (event.target.dataset.log) state.batches[Number(event.target.dataset.log)].logs[Number(event.target.dataset.index)][event.target.dataset.field] = event.target.value;
+      if (event.target.dataset.log) {
+        const batchIndex = Number(event.target.dataset.log);
+        const logIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        syncLogStageTime(state.batches[batchIndex], logIndex);
+      }
       if (event.target.dataset.cupping) state.batches[Number(event.target.dataset.cupping)].cupping[event.target.dataset.field] = event.target.value;
       save();
       if (event.target.dataset.batchField === "name") renderTabs();
     });
 
     document.addEventListener("change", (event) => {
+      if (event.target.dataset.log) {
+        const batchIndex = Number(event.target.dataset.log);
+        const logIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        syncLogStageTime(state.batches[batchIndex], logIndex);
+        renderBatchPanel();
+        save();
+        return;
+      }
       if (event.target.dataset.batchEnabled) {
         state.batches[Number(event.target.dataset.batchEnabled)].enabled = event.target.checked;
         save();
