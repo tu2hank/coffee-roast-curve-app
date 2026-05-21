@@ -531,16 +531,29 @@
       const currentTime = parseTimeToSeconds(current?.time);
       const currentTemp = Number(current?.temp);
       if (!Number.isFinite(currentTime) || !Number.isFinite(currentTemp) || currentTemp <= 0) return "";
+      const turningPointTime = milestoneTime(batch, "回溫點");
+      if (!Number.isFinite(turningPointTime) || currentTime <= turningPointTime) return "";
 
       const previous = [...batch.logs]
         .slice(0, logIndex)
         .reverse()
-        .find((log) => Number.isFinite(parseTimeToSeconds(log.time)) && Number.isFinite(Number(log.temp)) && Number(log.temp) > 0);
+        .find((log) => {
+          const time = parseTimeToSeconds(log.time);
+          return Number.isFinite(time) &&
+            (!Number.isFinite(turningPointTime) || time >= turningPointTime) &&
+            Number.isFinite(Number(log.temp)) &&
+            Number(log.temp) > 0;
+        });
       const previousTime = parseTimeToSeconds(previous?.time);
       const previousTemp = Number(previous?.temp);
       if (!Number.isFinite(previousTime) || previousTime >= currentTime || !Number.isFinite(previousTemp)) return "";
 
       return (currentTemp - previousTemp).toFixed(1);
+    }
+
+    function milestoneTime(batch, name) {
+      const milestone = batch.milestones.find((item) => item.name === name);
+      return parseTimeToSeconds(milestone?.time);
     }
 
     function updateRorFields() {
