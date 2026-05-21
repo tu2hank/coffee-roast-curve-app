@@ -182,7 +182,7 @@
 
     .chart {
       width: 100%;
-      height: 480px;
+      height: 560px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -190,7 +190,7 @@
 
     .single-chart {
       width: 100%;
-      height: 360px;
+      height: 440px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -362,8 +362,8 @@
       .span-2,
       .span-3,
       .span-4 { grid-column: auto; }
-      .chart { height: 380px; }
-      .single-chart { height: 320px; }
+      .chart { height: 460px; }
+      .single-chart { height: 400px; }
     }
 
     @media print {
@@ -376,8 +376,8 @@
       .status { display: none !important; }
       section { box-shadow: none; break-inside: avoid; margin-bottom: 12px; }
       .batch-panel { display: grid !important; }
-      .chart { height: 390px; }
-      .single-chart { height: 320px; }
+      .chart { height: 450px; }
+      .single-chart { height: 390px; }
     }
   </style>
 </head>
@@ -424,7 +424,7 @@
           <div class="chart-tools" id="chart-toggles"></div>
         </div>
         <div class="content">
-          <svg class="chart" id="chart" viewBox="0 0 980 460" role="img" aria-label="多鍋烘焙曲線比較圖"></svg>
+          <svg class="chart" id="chart" viewBox="0 0 980 540" role="img" aria-label="多鍋烘焙曲線比較圖"></svg>
           <div class="batch-cards" id="batch-cards" style="margin-top: 14px;"></div>
         </div>
       </section>
@@ -882,7 +882,7 @@
 
           <div class="subsection">
             <h3>單鍋烘焙曲線</h3>
-            <svg class="single-chart" id="single-chart-${index}" viewBox="0 0 900 380" role="img" aria-label="${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}單鍋烘焙曲線"></svg>
+            <svg class="single-chart" id="single-chart-${index}" viewBox="0 0 900 440" role="img" aria-label="${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}單鍋烘焙曲線"></svg>
           </div>
         </div>
       `).join("");
@@ -947,16 +947,60 @@
         .sort((a, b) => a.time - b.time);
     }
 
+    function getStagePoint(batch, stageName) {
+      const log = batch.logs.find((item) => item.stage === stageName);
+      if (log) {
+        const time = parseTimeToSeconds(log.stageTime || log.exactTime || log.time);
+        const temp = Number(log.temp);
+        if (Number.isFinite(time)) {
+          return { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null };
+        }
+      }
+      const milestone = batch.milestones.find((item) => item.name === stageName);
+      const time = parseTimeToSeconds(milestone?.time || milestone?.exactTime);
+      const temp = Number(milestone?.temp);
+      return Number.isFinite(time) ? { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null } : null;
+    }
+
+    function renderStageAnnotations(series, xScale, top, plotHeight, left, rightLimit, compact = false) {
+      const stages = milestoneNames
+        .filter((name) => name !== "入豆")
+        .map((name) => ({
+          name,
+          entries: series
+            .map(({ batch, index }) => ({ batch, index, point: getStagePoint(batch, name) }))
+            .filter((entry) => entry.point)
+        }))
+        .filter((stage) => stage.entries.length);
+
+      return stages.map((stage, stageIndex) => {
+        const avgTime = stage.entries.reduce((sum, entry) => sum + entry.point.time, 0) / stage.entries.length;
+        const x = Math.max(left + 44, Math.min(rightLimit - 44, xScale(avgTime)));
+        const titleY = top - (compact ? 62 : 76) + (stageIndex % 2) * (compact ? 0 : 8);
+        const detailStartY = titleY + 17;
+        const rows = stage.entries.map((entry, rowIndex) => {
+          const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
+          return `<text x="${x.toFixed(1)}" y="${(detailStartY + rowIndex * (compact ? 12 : 14)).toFixed(1)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 10 : 12}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+        }).join("");
+
+        return `
+          <line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1" stroke-dasharray="4 4"></line>
+          <text x="${x.toFixed(1)}" y="${titleY.toFixed(1)}" text-anchor="middle" fill="#111827" font-size="${compact ? 11 : 13}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>
+          ${rows}
+        `;
+      }).join("");
+    }
+
     function renderChart() {
       const series = state.batches
         .map((batch, index) => ({ batch, index, points: getChartPoints(batch), endTime: getChartEndTime(batch) }))
         .filter((item) => item.batch.enabled && item.points.length >= 2);
 
       const width = 980;
-      const height = 460;
+      const height = 540;
       const left = 68;
       const right = 34;
-      const top = 42;
+      const top = 132;
       const bottom = 68;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
@@ -1016,25 +1060,17 @@
         <text x="${width - 8}" y="${top + 4}" text-anchor="end" fill="#475467" font-size="14">RoR</text>
       `;
 
+      chart.innerHTML += renderStageAnnotations(series, xScale, top, plotHeight, left, width - right);
+
       series.forEach(({ batch, index, points }) => {
         const path = points
           .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
           .join(" ");
         chart.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
-        const labelOffsets = [
-          { dx: 0, dy: -18, anchor: "middle" },
-          { dx: 30, dy: 3, anchor: "start" },
-          { dx: -30, dy: 22, anchor: "end" }
-        ];
-        const labelOffset = labelOffsets[index] || labelOffsets[0];
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time);
           const y = yScale(point.temp);
-          const shouldLabel = pointIndex === 0 || pointIndex === points.length - 1 || point.note;
           chart.innerHTML += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
-          if (shouldLabel) {
-            chart.innerHTML += `<text x="${(x + labelOffset.dx).toFixed(1)}" y="${(y + labelOffset.dy).toFixed(1)}" text-anchor="${labelOffset.anchor}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(point.note || `${point.temp.toFixed(0)}°`)}</text>`;
-          }
         });
         const endPoint = points[points.length - 1];
         chart.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10).toFixed(1)}" y="${(yScale(endPoint.temp) + (index - 1) * 18).toFixed(1)}" fill="${colors[index]}" font-size="13" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
@@ -1060,10 +1096,10 @@
 
         const points = getChartPoints(batch);
         const width = 900;
-        const height = 380;
+        const height = 440;
         const left = 66;
         const right = 32;
-        const top = 42;
+        const top = 118;
         const bottom = 60;
         const plotWidth = width - left - right;
         const plotHeight = height - top - bottom;
@@ -1123,6 +1159,8 @@
           <text x="${width - 8}" y="${top + 4}" text-anchor="end" fill="#475467" font-size="14">RoR</text>
         `;
 
+        svg.innerHTML += renderStageAnnotations([{ batch, index, points }], xScale, top, plotHeight, left, width - right, true);
+
         const path = points
           .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
           .join(" ");
@@ -1131,15 +1169,12 @@
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time);
           const y = yScale(point.temp);
-          const labelY = pointIndex % 2 === 0 ? y - 12 : y + 22;
           svg.innerHTML += `
             <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"></circle>
-            <text x="${x.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" fill="#344054" font-size="12" font-weight="700">${point.temp.toFixed(0)}°</text>
           `;
-          if (point.note) {
-            svg.innerHTML += `<text x="${x.toFixed(1)}" y="${Math.max(top + 18, y - 30).toFixed(1)}" text-anchor="middle" fill="${color}" font-size="12">${escapeHtml(point.note)}</text>`;
-          }
         });
+        const endPoint = points[points.length - 1];
+        svg.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10).toFixed(1)}" y="${(yScale(endPoint.temp) - 12).toFixed(1)}" fill="${color}" font-size="13" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</text>`;
         if (rorPoints.length >= 2) {
           const rorPath = rorPoints
             .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${rorYScale(point.ror).toFixed(1)}`)

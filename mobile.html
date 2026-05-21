@@ -177,7 +177,7 @@
 
     .chart {
       width: 100%;
-      height: 310px;
+      height: 390px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -297,7 +297,7 @@
       .field-grid { grid-template-columns: 1fr 1fr; }
       .wide { grid-column: span 2; }
       .toolbar { grid-template-columns: repeat(4, 1fr); }
-      .chart { height: 360px; }
+      .chart { height: 430px; }
     }
   </style>
 </head>
@@ -340,7 +340,7 @@
         <h2>三鍋疊圖</h2>
       </div>
       <div class="content">
-        <svg class="chart" id="chart" viewBox="0 0 900 420" role="img" aria-label="三鍋疊加曲線"></svg>
+        <svg class="chart" id="chart" viewBox="0 0 900 500" role="img" aria-label="三鍋疊加曲線"></svg>
         <div class="chart-toggles" id="chart-toggles"></div>
       </div>
     </section>
@@ -560,6 +560,41 @@
         .sort((a, b) => a.time - b.time);
     }
 
+    function stagePoint(batch, stageName) {
+      const log = batch.logs.find((item) => item.stage === stageName);
+      if (log) {
+        const time = parseTimeToSeconds(log.stageTime || log.exactTime || log.time);
+        const temp = Number(log.temp);
+        if (Number.isFinite(time)) return { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null };
+      }
+      const milestone = batch.milestones.find((item) => item.name === stageName);
+      const time = parseTimeToSeconds(milestone?.time || milestone?.exactTime);
+      const temp = Number(milestone?.temp);
+      return Number.isFinite(time) ? { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null } : null;
+    }
+
+    function stageAnnotations(series, xScale, top, plotHeight, left, rightLimit, compact = false) {
+      return milestoneNames
+        .filter((name) => name !== "入豆")
+        .map((name) => ({
+          name,
+          entries: series
+            .map(({ batch, index }) => ({ batch, index, point: stagePoint(batch, name) }))
+            .filter((entry) => entry.point)
+        }))
+        .filter((stage) => stage.entries.length)
+        .map((stage) => {
+          const avgTime = stage.entries.reduce((sum, entry) => sum + entry.point.time, 0) / stage.entries.length;
+          const x = Math.max(left + 42, Math.min(rightLimit - 42, xScale(avgTime)));
+          const titleY = top - (compact ? 58 : 68);
+          const rows = stage.entries.map((entry, rowIndex) => {
+            const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
+            return `<text x="${x}" y="${titleY + 16 + rowIndex * (compact ? 11 : 12)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 9 : 10}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+          }).join("");
+          return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-dasharray="4 4"></line><text x="${x}" y="${titleY}" text-anchor="middle" fill="#111827" font-size="${compact ? 10 : 11}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>${rows}`;
+        }).join("");
+    }
+
     function nextLogTime(batch) {
       const seconds = [...batch.logs].reverse().map((log) => parseTimeToSeconds(log.time)).find((item) => Number.isFinite(item));
       const nextSeconds = Number.isFinite(seconds) ? seconds + 30 : 0;
@@ -722,7 +757,7 @@
 
         <div class="card content">
           <h3>單鍋曲線</h3>
-          <svg class="chart" id="single-chart" viewBox="0 0 900 420" role="img" aria-label="單鍋曲線"></svg>
+          <svg class="chart" id="single-chart" viewBox="0 0 900 500" role="img" aria-label="單鍋曲線"></svg>
         </div>
       `;
       renderSingleChart();
@@ -746,7 +781,7 @@
     }
 
     function drawChart(svg, series, title) {
-      const width = 900, height = 420, left = 62, right = 26, top = 38, bottom = 58;
+      const width = 900, height = 500, left = 62, right = 26, top = 118, bottom = 58;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
       svg.innerHTML = `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect><text x="${left}" y="24" fill="#344054" font-size="18" font-weight="700">${title}</text>`;
@@ -780,20 +815,13 @@
         svg.innerHTML += `<text x="${width - right + 6}" y="${y + 4}" fill="#475467" font-size="11">${ror}</text>`;
       }
       svg.innerHTML += `<line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3"></line><line x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}" stroke="#98a2b3"></line><line x1="${width - right}" y1="${top}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3"></line><text x="12" y="${top + 4}" fill="#475467" font-size="12">°C</text><text x="${width - 6}" y="${top + 4}" text-anchor="end" fill="#475467" font-size="12">RoR</text>`;
+      svg.innerHTML += stageAnnotations(series, xScale, top, plotHeight, left, width - right, series.length === 1);
       series.forEach(({ batch, index, points }) => {
         const path = points.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`).join(" ");
         svg.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
-        const labelOffsets = [
-          { dx: 0, dy: -18, anchor: "middle" },
-          { dx: 28, dy: 3, anchor: "start" },
-          { dx: -28, dy: 22, anchor: "end" }
-        ];
-        const labelOffset = labelOffsets[index] || labelOffsets[0];
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time), y = yScale(point.temp);
-          const label = point.note || (pointIndex === points.length - 1 ? `${point.temp.toFixed(0)}°` : "");
           svg.innerHTML += `<circle cx="${x}" cy="${y}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
-          if (label) svg.innerHTML += `<text x="${x + labelOffset.dx}" y="${y + labelOffset.dy}" text-anchor="${labelOffset.anchor}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(label)}</text>`;
         });
         const endPoint = points[points.length - 1];
         svg.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10)}" y="${yScale(endPoint.temp) + (index - 1) * 18}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
