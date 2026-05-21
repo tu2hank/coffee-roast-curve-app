@@ -452,7 +452,6 @@
                   <th>甜感</th>
                   <th>醇厚度</th>
                   <th>餘韻</th>
-                  <th>乾淨度</th>
                   <th>整體分數</th>
                   <th>判斷</th>
                 </tr>
@@ -484,7 +483,8 @@
     const milestoneNames = ["入豆", "回溫點", "轉黃", "肉桂色", "一爆開始", "一爆結束", "下豆"];
     const beanFields = ["date", "beanItem", "process", "hypothesis"];
     const batchFields = ["name", "enabled", "strategy", "targetRoast", "greenWeight", "roastedWeight", "heatPlan", "damperPlan", "drumSpeed", "actualRoast", "roaster", "operator"];
-    const cuppingFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish", "cleanCup", "score", "judgement"];
+    const cuppingScoreFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish"];
+    const cuppingFields = [...cuppingScoreFields, "score", "judgement"];
     const MAX_CHART_TIME = 13 * 60;
 
     function today() {
@@ -519,6 +519,13 @@
     function csvValue(value) {
       const text = String(value ?? "");
       return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function scoreOptions(value) {
+      return `<option value=""></option>${Array.from({ length: 10 }, (_, index) => {
+        const score = String(index + 1);
+        return `<option value="${score}" ${String(value || "") === score ? "selected" : ""}>${score}</option>`;
+      }).join("")}`;
     }
 
     function getInitialLogs() {
@@ -819,33 +826,6 @@
           </div>
 
           <div class="subsection">
-            <h3>重要階段</h3>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr><th>階段</th><th>階段時間</th><th>精確時間</th><th>溫度 (°C)</th><th>備註</th></tr>
-                </thead>
-                <tbody>
-                  ${batch.milestones.map((milestone, milestoneIndex) => `
-                    <tr>
-                      <td>${escapeHtml(milestone.name)}</td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTime" value="${escapeHtml(milestone.exactTime || "")}" placeholder="mm:ss"></td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="subsection">
-            <h3>單鍋烘焙曲線</h3>
-            <svg class="single-chart" id="single-chart-${index}" viewBox="0 0 900 380" role="img" aria-label="${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}單鍋烘焙曲線"></svg>
-          </div>
-
-          <div class="subsection">
             <div class="section-head" style="padding:0 0 12px;border-bottom:0;">
               <h3>30 秒詳細數據</h3>
               <button class="ghost add-row" type="button" data-add-log="${index}">＋ 新增 30 秒列</button>
@@ -877,6 +857,33 @@
               </table>
             </div>
           </div>
+
+          <div class="subsection">
+            <h3>重要階段</h3>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>階段</th><th>階段時間</th><th>精確時間</th><th>溫度 (°C)</th><th>備註</th></tr>
+                </thead>
+                <tbody>
+                  ${batch.milestones.map((milestone, milestoneIndex) => `
+                    <tr>
+                      <td>${escapeHtml(milestone.name)}</td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTime" value="${escapeHtml(milestone.exactTime || "")}" placeholder="mm:ss"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>單鍋烘焙曲線</h3>
+            <svg class="single-chart" id="single-chart-${index}" viewBox="0 0 900 380" role="img" aria-label="${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}單鍋烘焙曲線"></svg>
+          </div>
         </div>
       `).join("");
     }
@@ -897,7 +904,11 @@
         <tr>
           <td style="color:${colors[index]};font-weight:700;">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</td>
           ${cuppingFields.map((field) => `
-            <td><input data-cupping="${index}" data-field="${field}" value="${escapeHtml(batch.cupping[field])}"></td>
+            <td>
+              ${cuppingScoreFields.includes(field)
+                ? `<select data-cupping="${index}" data-field="${field}">${scoreOptions(batch.cupping[field])}</select>`
+                : `<input data-cupping="${index}" data-field="${field}" value="${escapeHtml(batch.cupping[field])}">`}
+            </td>
           `).join("")}
         </tr>
       `).join("");
@@ -1187,14 +1198,14 @@
         ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
 
         syncMilestonesFromLogs(batch);
-        csv += "\n重要階段\n階段,階段時間,精確時間,溫度(°C),備註\n";
-        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
-
         csv += "\n詳細數據\n時間,溫度(°C),RoR,重要階段,階段時間,精確時間,備註\n";
         batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.exactTime, log.note].map(csvValue).join(",") + "\n");
+
+        csv += "\n重要階段\n階段,階段時間,精確時間,溫度(°C),備註\n";
+        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
       });
 
-      csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,乾淨度,整體分數,判斷\n";
+      csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,整體分數,判斷\n";
       state.batches.forEach((batch) => {
         csv += [batch.name, ...cuppingFields.map((field) => batch.cupping[field])].map(csvValue).join(",") + "\n";
       });
@@ -1263,6 +1274,12 @@
         state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
         syncLogStageTime(state.batches[batchIndex], logIndex);
         renderBatchPanels();
+        save();
+        return;
+      }
+      if (event.target.dataset.cupping) {
+        const batchIndex = Number(event.target.dataset.cupping);
+        state.batches[batchIndex].cupping[event.target.dataset.field] = event.target.value;
         save();
         return;
       }
