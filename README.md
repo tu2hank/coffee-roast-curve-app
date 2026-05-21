@@ -1,10 +1,11 @@
-# 咖啡試烘曲線比較表
+# 烘豆曲線紀錄
 
-這個資料夾集中放置咖啡試烘曲線比較表相關檔案。
+這個資料夾集中放置烘豆曲線紀錄相關檔案。
 
 ## 主要檔案
 
-- `index.html`：咖啡試烘曲線比較表主頁，可直接用瀏覽器開啟。
+- `index.html`：烘豆曲線紀錄桌機版。
+- `mobile.html`：烘豆曲線紀錄手機板，適合加入手機主畫面使用。
 - `dev-server.cjs`：本機預覽用的小型伺服器。
 
 ## 目前功能
@@ -25,6 +26,10 @@
 線上分享版：
 
 `https://tu2hank.github.io/coffee-roast-curve-app/`
+
+手機板：
+
+`https://tu2hank.github.io/coffee-roast-curve-app/mobile.html`
 
 直接開啟：
 
