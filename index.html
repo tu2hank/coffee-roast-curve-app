@@ -391,7 +391,7 @@
       <div class="actions">
         <a class="ghost" href="./mobile.html" style="min-height:42px;border:1px solid #fed7aa;border-radius:8px;padding:0 14px;font:inherit;font-weight:700;display:inline-flex;align-items:center;text-decoration:none;color:var(--accent-dark);background:#fff7ed;">手機板</a>
         <button class="danger" id="clear-button" type="button">⌫ 清除數據</button>
-        <button class="secondary" id="export-button" type="button">⇩ 匯出比較 CSV</button>
+        <button class="secondary" id="export-button" type="button">⇩ 匯出 Excel</button>
         <button class="primary" id="print-button" type="button">⎙ 列印 / PDF</button>
       </div>
     </header>
@@ -519,6 +519,52 @@
     function csvValue(value) {
       const text = String(value ?? "");
       return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function xlsCell(value, className = "") {
+      return `<td class="${className}">${escapeHtml(value ?? "")}</td>`;
+    }
+
+    function xlsHeader(values) {
+      return `<tr>${values.map((value) => `<th>${escapeHtml(value)}</th>`).join("")}</tr>`;
+    }
+
+    function xlsRows(rows) {
+      return rows.map((row) => `<tr>${row.map((value) => xlsCell(value)).join("")}</tr>`).join("");
+    }
+
+    function xlsSection(title, columns, rows) {
+      return `
+        <tr><td class="section" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>
+        ${columns.length ? xlsHeader(columns) : ""}
+        ${xlsRows(rows)}
+        <tr class="gap"><td colspan="${Math.max(columns.length, 2)}"></td></tr>
+      `;
+    }
+
+    function downloadWorkbook(filename, bodyRows) {
+      const html = `<!doctype html>
+        <html><head><meta charset="utf-8">
+        <style>
+          body { font-family: "Microsoft JhengHei", Arial, sans-serif; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #d9c7b8; padding: 6px 8px; font-size: 12px; vertical-align: top; mso-number-format:"\\@"; }
+          th { background: #f3e6d8; font-weight: 700; text-align: center; }
+          .title { background: #8a4b20; color: #fff; font-size: 18px; font-weight: 800; text-align: center; }
+          .section { background: #d97706; color: #fff; font-weight: 800; font-size: 14px; }
+          .gap td, tr.gap td { border: 0; height: 12px; }
+        </style></head><body><table>
+        <colgroup>${Array.from({ length: 10 }, () => "<col style='width:120px'>").join("")}</colgroup>
+        ${bodyRows}</table></body></html>`;
+      const blob = new Blob(["\uFEFF", html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     }
 
     function scoreOptions(value) {
@@ -1205,18 +1251,16 @@
     }
 
     function handleExportCSV() {
-      let csv = "\uFEFF";
-      csv += "=== 豆子與試烘目標 ===\n";
-      [
+      let rows = `<tr><td class="title" colspan="10">烘豆曲線紀錄</td></tr>`;
+      rows += xlsSection("豆子與試烘目標", ["項目", "內容"], [
         ["試烘日期", state.bean.date],
         ["生豆品項", state.bean.beanItem],
         ["處理法", state.bean.process],
         ["假設條件", state.bean.hypothesis]
-      ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+      ]);
 
       state.batches.forEach((batch, index) => {
-        csv += `\n=== ${batch.name || `第 ${index + 1} 鍋`} 烘法設定 ===\n`;
-        [
+        rows += xlsSection(`${batch.name || `第 ${index + 1} 鍋`} 烘法設定`, ["項目", "內容"], [
           ["烘法策略", batch.strategy],
           ["預計烘焙程度", batch.targetRoast],
           ["實際烘焙度", batch.actualRoast],
@@ -1230,35 +1274,26 @@
           ["轉速", batch.drumSpeed],
           ["烘焙機", batch.roaster],
           ["操作者", batch.operator]
-        ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+        ]);
 
         syncMilestonesFromLogs(batch);
-        csv += "\n詳細數據\n時間,溫度(°C),RoR,重要階段,階段精確時間,精確溫度,備註\n";
-        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note].map(csvValue).join(",") + "\n");
+        rows += xlsSection("30 秒詳細數據", ["時間", "溫度(°C)", "RoR", "重要階段", "階段精確時間", "精確溫度", "備註"],
+          batch.logs.map((log, logIndex) => [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note])
+        );
 
-        csv += "\n重要階段\n階段,階段精確時間,精確溫度,溫度(°C),備註\n";
-        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
+        rows += xlsSection("重要階段", ["階段", "階段精確時間", "精確溫度", "溫度(°C)", "備註"],
+          batch.milestones.map((milestone) => [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note])
+        );
       });
 
-      csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,整體分數,判斷\n";
-      state.batches.forEach((batch) => {
-        csv += [batch.name, ...cuppingFields.map((field) => batch.cupping[field])].map(csvValue).join(",") + "\n";
-      });
-      csv += "\n=== 結論 ===\n";
+      rows += xlsSection("杯測比較", ["鍋次", "乾香/濕香", "酸質", "甜感", "醇厚度", "餘韻", "整體分數", "判斷"],
+        state.batches.map((batch) => [batch.name, ...cuppingFields.map((field) => batch.cupping[field])])
+      );
       const winner = state.decision.winner === "" ? "" : state.batches[Number(state.decision.winner)]?.name;
-      [["最適合烘法", winner], ["結論與下次調整", state.decision.conclusion]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      rows += xlsSection("結論", ["項目", "內容"], [["最適合烘法", winner], ["結論與下次調整", state.decision.conclusion]]);
       const safeBeanItem = (state.bean.beanItem || "未命名").replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_").slice(0, 40);
-      link.href = url;
-      link.download = `試烘比較_${(state.bean.date || today()).replace(/-/g, "")}_${safeBeanItem}.csv`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      status.textContent = "已匯出比較 CSV。";
+      downloadWorkbook(`試烘比較_${(state.bean.date || today()).replace(/-/g, "")}_${safeBeanItem}.xls`, rows);
+      status.textContent = "已匯出 Excel 表格。";
     }
 
     document.addEventListener("input", (event) => {
