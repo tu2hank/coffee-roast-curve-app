@@ -296,7 +296,7 @@
 
     .table-scroll { overflow-x: auto; }
 
-    .log-table { min-width: 900px; }
+    .log-table { min-width: 1120px; }
     .compare-table { min-width: 980px; }
 
     th,
@@ -413,7 +413,7 @@
             <input id="process" data-field="bean.process" type="text" placeholder="水洗 / 日曬 / 蜜處理">
           </label>
           <label class="span-4">假設條件
-            <textarea id="hypothesis" data-field="bean.hypothesis" placeholder="例如：A 鍋保留酸質、B 鍋拉長梅納反應、C 鍋延長發展時間，比較甜感與乾淨度。"></textarea>
+            <textarea id="hypothesis" data-field="bean.hypothesis"></textarea>
           </label>
         </div>
       </section>
@@ -526,7 +526,9 @@
         time: formatDuration(index * 30),
         temp: "",
         ror: "",
-        note: index === 0 ? "入豆" : ""
+        stage: index === 0 ? "入豆" : "",
+        stageTime: index === 0 ? "00:00" : "",
+        note: ""
       }));
     }
 
@@ -538,7 +540,7 @@
       return {
         name: `第 ${index + 1} 鍋`,
         enabled: index < 2,
-        strategy: index === 0 ? "基準烘法" : index === 1 ? "調整烘法" : "備用烘法",
+        strategy: "",
         targetRoast: "",
         greenWeight: "",
         roastedWeight: "",
@@ -588,6 +590,7 @@
         batches: fresh.batches.map((batch, index) => ({
           ...batch,
           ...(saved.batches?.[index] || {}),
+          strategy: normalizeStrategy(saved.batches?.[index]?.strategy || batch.strategy),
           milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
           logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
           cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
@@ -625,11 +628,25 @@
       });
     }
 
+    function normalizeStrategy(value) {
+      return ["基準烘法", "調整烘法", "備用烘法"].includes(value) ? "" : value;
+    }
+
     function normalizeLogs(savedLogs, freshLogs) {
       if (!Array.isArray(savedLogs)) return freshLogs;
       const logs = savedLogs.filter((log) => {
         const time = parseTimeToSeconds(log?.time);
         return Number.isFinite(time) && time <= MAX_CHART_TIME;
+      }).map((log) => {
+        const stage = log.stage || (milestoneNames.includes(log.note) ? log.note : "");
+        return {
+          time: log.time || "",
+          temp: log.temp || "",
+          ror: log.ror || "",
+          stage,
+          stageTime: log.stageTime || (stage ? log.time || "" : ""),
+          note: stage && log.note === stage ? "" : log.note || ""
+        };
       });
       return logs.length ? logs : freshLogs;
     }
@@ -735,7 +752,7 @@
                 <input data-batch="${index}" data-batch-field="name" value="${escapeHtml(batch.name)}">
               </label>
               <label>烘法策略
-                <input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}" placeholder="例如：基準 / 拉長梅納 / 延長發展">
+                <input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}">
               </label>
               <label>預計烘焙程度
                 <input data-batch="${index}" data-batch-field="targetRoast" value="${escapeHtml(batch.targetRoast)}">
@@ -756,7 +773,7 @@
                 <input data-batch="${index}" data-batch-field="operator" value="${escapeHtml(batch.operator)}">
               </label>
               <label class="span-2">火力策略
-                <input data-batch="${index}" data-batch-field="heatPlan" value="${escapeHtml(batch.heatPlan)}" placeholder="例如：入豆 70%，轉黃後降至 55%">
+                <input data-batch="${index}" data-batch-field="heatPlan" value="${escapeHtml(batch.heatPlan)}">
               </label>
               <label>風門策略
                 <input data-batch="${index}" data-batch-field="damperPlan" value="${escapeHtml(batch.damperPlan)}">
@@ -801,7 +818,7 @@
             <div class="table-scroll">
               <table class="log-table">
                 <thead>
-                  <tr><th>時間</th><th>溫度 (°C)</th><th>RoR</th><th>備註(火力 / 風門等)</th><th></th></tr>
+                  <tr><th>時間</th><th>溫度 (°C)</th><th>RoR</th><th>重要階段</th><th>階段時間</th><th>備註(火力 / 風門等)</th><th></th></tr>
                 </thead>
                 <tbody>
                   ${batch.logs.map((log, logIndex) => `
@@ -809,6 +826,13 @@
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></td>
                       <td><input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(getAutoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></td>
+                      <td>
+                        <select data-log="${index}" data-index="${logIndex}" data-field="stage">
+                          <option value=""></option>
+                          ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
+                        </select>
+                      </td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></td>
                       <td><button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button></td>
                     </tr>
@@ -848,7 +872,7 @@
         .map((log) => ({
           time: parseTimeToSeconds(log.time),
           temp: Number(log.temp),
-          note: log.note
+          note: log.stage || log.note
         }))
         .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
         .sort((a, b) => a.time - b.time);
@@ -1129,8 +1153,8 @@
         csv += "\n重要階段\n階段,時間,溫度(°C),備註\n";
         batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
 
-        csv += "\n詳細數據\n時間,溫度(°C),RoR,備註\n";
-        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.note].map(csvValue).join(",") + "\n");
+        csv += "\n詳細數據\n時間,溫度(°C),RoR,重要階段,階段時間,備註\n";
+        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.note].map(csvValue).join(",") + "\n");
       });
 
       csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,乾淨度,整體分數,判斷\n";
@@ -1220,7 +1244,7 @@
           status.textContent = "已到 13:00，不再新增時間列。";
           return;
         }
-        batch.logs.push({ time: nextTime, temp: "", ror: "", note: "" });
+        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", note: "" });
         renderBatchPanels();
         renderSingleBatchCharts();
         save();
