@@ -664,19 +664,20 @@
     }
 
     function getAutoRor(batch, logIndex) {
-      const points = batch.logs
-        .map((log, index) => ({ index, time: parseTimeToSeconds(log.time), temp: Number(log.temp) }))
-        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
-        .sort((a, b) => a.time - b.time);
-      if (points.length < 2) return "";
+      const current = batch.logs[logIndex];
+      const currentTime = parseTimeToSeconds(current?.time);
+      const currentTemp = Number(current?.temp);
+      if (!Number.isFinite(currentTime) || !Number.isFinite(currentTemp) || currentTemp <= 0) return "";
 
-      const position = points.findIndex((point) => point.index === logIndex);
-      if (position === -1) return "";
+      const previous = [...batch.logs]
+        .slice(0, logIndex)
+        .reverse()
+        .find((log) => Number.isFinite(parseTimeToSeconds(log.time)) && Number.isFinite(Number(log.temp)) && Number(log.temp) > 0);
+      const previousTime = parseTimeToSeconds(previous?.time);
+      const previousTemp = Number(previous?.temp);
+      if (!Number.isFinite(previousTime) || previousTime >= currentTime || !Number.isFinite(previousTemp)) return "";
 
-      const start = position === 0 ? points[position] : points[position - 1];
-      const end = position === points.length - 1 ? points[position] : points[position + 1];
-      if (end.time <= start.time) return "";
-      return (((end.temp - start.temp) / (end.time - start.time)) * 60).toFixed(1);
+      return (currentTemp - previousTemp).toFixed(1);
     }
 
     function updateAutoRorFields() {
