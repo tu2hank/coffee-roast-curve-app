@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#a85513">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="試烘曲線">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>咖啡試烘曲線比較表</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./assets/icons/app-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2933;
+      --muted: #66737f;
+      --line: #d8dee4;
+      --paper: #f6f8f7;
+      --accent: #a85513;
+      --accent-dark: #7c3b0a;
+      --green: #14746f;
+      --red: #b42318;
+      --blue: #2454a6;
+      --shadow: 0 16px 42px rgba(31, 41, 51, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #fff7ed 0%, var(--paper) 42%, #eef6f4 100%);
+      color: var(--ink);
+    }
+
+    main {
+      width: min(1240px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .actions,
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .actions { justify-content: flex-end; }
+
+    button {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .primary { background: var(--accent); color: #fff; }
+    .primary:hover { background: var(--accent-dark); }
+    .secondary { background: #ecfdfb; color: var(--green); border-color: #a7f3d0; }
+    .ghost { background: #fff7ed; color: var(--accent-dark); border-color: #fed7aa; }
+    .danger { background: #fff1f2; color: var(--red); border-color: #fecdd3; }
+
+    section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .content {
+      padding: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #344054;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #b9c3cd;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input,
+    select { min-height: 42px; }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 3px solid rgba(168, 85, 19, 0.18);
+      border-color: var(--accent);
+    }
+
+    .chart {
+      width: 100%;
+      height: 480px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .single-chart {
+      width: 100%;
+      height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .chart-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      color: #344054;
+    }
+
+    .checkline input {
+      width: 18px;
+      min-height: 18px;
+      height: 18px;
+    }
+
+    .metrics,
+    .batch-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric,
+    .batch-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfd;
+      padding: 12px;
+    }
+
+    .batch-card {
+      border-top: 5px solid var(--batch-color, var(--accent));
+    }
+
+    .batch-card strong,
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.2;
+      color: var(--accent-dark);
+    }
+
+    .metric span,
+    .batch-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .tabs {
+      padding: 14px 18px 0;
+    }
+
+    .tab {
+      background: #f8fafc;
+      color: #475467;
+      border-color: var(--line);
+    }
+
+    .tab.active {
+      background: #fff7ed;
+      color: var(--accent-dark);
+      border-color: var(--accent);
+    }
+
+    .batch-panel {
+      display: none;
+      padding: 18px;
+    }
+
+    .batch-panel.active {
+      display: grid;
+      gap: 16px;
+    }
+
+    .subsection {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .table-scroll { overflow-x: auto; }
+
+    .log-table { min-width: 900px; }
+    .compare-table { min-width: 980px; }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #475467;
+      background: #f8fafc;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    td input {
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+
+    .icon-button {
+      width: 38px;
+      min-height: 38px;
+      padding: 0;
+      background: #f8fafc;
+      color: var(--muted);
+      border-color: var(--line);
+    }
+
+    .icon-button:hover {
+      color: var(--red);
+      border-color: #fecdd3;
+      background: #fff1f2;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--green);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      header { grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .span-3,
+      .span-4 { grid-column: span 2; }
+      .metrics,
+      .batch-cards { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      main {
+        width: min(100vw - 20px, 620px);
+        padding-top: 12px;
+      }
+
+      h1 { font-size: 28px; }
+      .grid { grid-template-columns: 1fr; }
+      .span-2,
+      .span-3,
+      .span-4 { grid-column: auto; }
+      .chart { height: 380px; }
+      .single-chart { height: 320px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      main { width: auto; padding: 0; }
+      .actions,
+      .tabs,
+      .icon-button,
+      .add-row,
+      .status { display: none !important; }
+      section { box-shadow: none; break-inside: avoid; margin-bottom: 12px; }
+      .batch-panel { display: grid !important; }
+      .chart { height: 390px; }
+      .single-chart { height: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>咖啡試烘曲線比較表</h1>
+        <p class="subtitle">同一支豆子可記錄 2-3 鍋不同烘法，疊加曲線並搭配杯測結果，判斷最適合的烘焙策略。</p>
+      </div>
+      <div class="actions">
+        <button class="danger" id="clear-button" type="button">⌫ 清除數據</button>
+        <button class="secondary" id="export-button" type="button">⇩ 匯出比較 CSV</button>
+        <button class="primary" id="print-button" type="button">⎙ 列印 / PDF</button>
+      </div>
+    </header>
+
+    <div class="stack">
+      <section aria-labelledby="bean-title">
+        <div class="section-head">
+          <h2 id="bean-title">豆子與試烘目標</h2>
+          <div class="status" id="status">已自動保存到此瀏覽器。</div>
+        </div>
+        <div class="content grid">
+          <label>試烘日期
+            <input id="date" data-field="bean.date" type="date">
+          </label>
+          <label class="span-2">生豆品項
+            <input id="beanItem" data-field="bean.beanItem" type="text" placeholder="例如：衣索比亞 耶加雪菲 水洗">
+          </label>
+          <label>生豆批號 / 來源
+            <input id="source" data-field="bean.source" type="text" placeholder="供應商或批號">
+          </label>
+          <label>處理法
+            <input id="process" data-field="bean.process" type="text" placeholder="水洗 / 日曬 / 蜜處理">
+          </label>
+          <label>品種 / 海拔
+            <input id="variety" data-field="bean.variety" type="text" placeholder="例如：Heirloom / 1900m">
+          </label>
+          <label>目標風味
+            <input id="targetFlavor" data-field="bean.targetFlavor" type="text" placeholder="例如：明亮酸質、花香、甜感">
+          </label>
+          <label>比較重點
+            <select id="focus" data-field="bean.focus">
+              <option value="">選擇</option>
+              <option>發展時間差異</option>
+              <option>火力曲線差異</option>
+              <option>風門調整差異</option>
+              <option>下豆溫差異</option>
+              <option>烘焙度差異</option>
+            </select>
+          </label>
+          <label class="span-4">試烘假設
+            <textarea id="hypothesis" data-field="bean.hypothesis" placeholder="例如：A 鍋保留酸質、B 鍋拉長梅納反應、C 鍋延長發展時間，比較甜感與乾淨度。"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section aria-labelledby="chart-title">
+        <div class="section-head">
+          <h2 id="chart-title">多鍋烘焙曲線比較</h2>
+          <div class="chart-tools" id="chart-toggles"></div>
+        </div>
+        <div class="content">
+          <svg class="chart" id="chart" viewBox="0 0 980 460" role="img" aria-label="多鍋烘焙曲線比較圖"></svg>
+          <div class="batch-cards" id="batch-cards" style="margin-top: 14px;"></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="batch-title">
+        <div class="section-head">
+          <h2 id="batch-title">各鍋烘焙紀錄</h2>
+        </div>
+        <div class="tabs" id="batch-tabs"></div>
+        <div id="batch-panels"></div>
+      </section>
+
+      <section aria-labelledby="cupping-title">
+        <div class="section-head">
+          <h2 id="cupping-title">杯測比較與結論</h2>
+        </div>
+        <div class="content stack">
+          <div class="table-scroll">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>鍋次</th>
+                  <th>乾香 / 濕香</th>
+                  <th>酸質</th>
+                  <th>甜感</th>
+                  <th>醇厚度</th>
+                  <th>餘韻</th>
+                  <th>乾淨度</th>
+                  <th>整體分數</th>
+                  <th>判斷</th>
+                </tr>
+              </thead>
+              <tbody id="cupping-body"></tbody>
+            </table>
+          </div>
+          <div class="grid">
+            <label>最適合烘法
+              <select id="winner" data-field="decision.winner">
+                <option value="">尚未決定</option>
+                <option value="0">第 1 鍋</option>
+                <option value="1">第 2 鍋</option>
+                <option value="2">第 3 鍋</option>
+              </select>
+            </label>
+            <label class="span-3">結論與下次調整
+              <textarea id="conclusion" data-field="decision.conclusion" placeholder="寫下哪一鍋最適合這支豆子，以及下一次要保留或調整的做法。"></textarea>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "coffee-roast-compare-v2";
+    const colors = ["#a85513", "#14746f", "#2454a6"];
+    const milestoneNames = ["入豆", "回溫點", "轉黃", "一爆開始", "一爆結束", "下豆"];
+    const beanFields = ["date", "beanItem", "source", "process", "variety", "targetFlavor", "focus", "hypothesis"];
+    const batchFields = ["name", "enabled", "strategy", "targetRoast", "greenWeight", "roastedWeight", "heatPlan", "damperPlan", "drumSpeed", "actualRoast", "roaster", "operator"];
+    const cuppingFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish", "cleanCup", "score", "judgement"];
+
+    function today() {
+      return new Date().toLocaleDateString("en-CA");
+    }
+
+    function formatDuration(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return "--";
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function parseTimeToSeconds(value) {
+      const text = String(value || "").trim();
+      if (!text) return null;
+      const parts = text.split(":").map(Number);
+      if (parts.some(Number.isNaN)) return null;
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      return null;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function csvValue(value) {
+      const text = String(value ?? "");
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function getInitialLogs() {
+      return Array.from({ length: 31 }, (_, index) => ({
+        time: formatDuration(index * 30),
+        temp: "",
+        ror: "",
+        note: index === 0 ? "入豆" : ""
+      }));
+    }
+
+    function getInitialMilestones() {
+      return milestoneNames.map((name) => ({ name, time: "", temp: "", note: "" }));
+    }
+
+    function createBatch(index) {
+      return {
+        name: `第 ${index + 1} 鍋`,
+        enabled: index < 2,
+        strategy: index === 0 ? "基準烘法" : index === 1 ? "調整烘法" : "備用烘法",
+        targetRoast: "",
+        greenWeight: "",
+        roastedWeight: "",
+        heatPlan: "",
+        damperPlan: "",
+        drumSpeed: "",
+        actualRoast: "",
+        roaster: "",
+        operator: "",
+        milestones: getInitialMilestones(),
+        logs: getInitialLogs(),
+        cupping: Object.fromEntries(cuppingFields.map((field) => [field, ""]))
+      };
+    }
+
+    function createState() {
+      return {
+        bean: {
+          date: today(),
+          beanItem: "",
+          source: "",
+          process: "",
+          variety: "",
+          targetFlavor: "",
+          focus: "",
+          hypothesis: ""
+        },
+        batches: [createBatch(0), createBatch(1), createBatch(2)],
+        activeBatch: 0,
+        decision: {
+          winner: "",
+          conclusion: ""
+        }
+      };
+    }
+
+    let state = createState();
+
+    const status = document.querySelector("#status");
+    const chart = document.querySelector("#chart");
+    const batchTabs = document.querySelector("#batch-tabs");
+    const batchPanels = document.querySelector("#batch-panels");
+    const batchCards = document.querySelector("#batch-cards");
+    const cuppingBody = document.querySelector("#cupping-body");
+
+    function normalizeState(saved) {
+      const fresh = createState();
+      if (!saved || typeof saved !== "object") return fresh;
+      return {
+        bean: { ...fresh.bean, ...(saved.bean || {}) },
+        batches: fresh.batches.map((batch, index) => ({
+          ...batch,
+          ...(saved.batches?.[index] || {}),
+          milestones: Array.isArray(saved.batches?.[index]?.milestones) ? saved.batches[index].milestones : batch.milestones,
+          logs: Array.isArray(saved.batches?.[index]?.logs) ? saved.batches[index].logs : batch.logs,
+          cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
+        })),
+        activeBatch: Number.isInteger(saved.activeBatch) ? Math.max(0, Math.min(2, saved.activeBatch)) : fresh.activeBatch,
+        decision: { ...fresh.decision, ...(saved.decision || {}) }
+      };
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderChart();
+      renderSingleBatchCharts();
+      renderBatchCards();
+      status.textContent = "已自動保存到此瀏覽器。";
+    }
+
+    function load() {
+      try {
+        state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"));
+      } catch {
+        state = createState();
+        status.textContent = "讀取舊紀錄失敗，已使用空白表單。";
+      }
+    }
+
+    function getLossRate(batch) {
+      const green = Number(batch.greenWeight);
+      const roasted = Number(batch.roastedWeight);
+      if (!green || !roasted || roasted > green) return "";
+      return (((green - roasted) / green) * 100).toFixed(1);
+    }
+
+    function getDevelopmentTime(batch) {
+      const firstCrack = batch.milestones.find((milestone) => milestone.name === "一爆開始");
+      const drop = batch.milestones.find((milestone) => milestone.name === "下豆");
+      return formatDuration(parseTimeToSeconds(drop?.time) - parseTimeToSeconds(firstCrack?.time));
+    }
+
+    function getHighestTemp(batch) {
+      const temps = batch.logs.map((log) => Number(log.temp)).filter((temp) => Number.isFinite(temp) && temp > 0);
+      return temps.length ? `${Math.max(...temps).toFixed(1)}°C` : "--";
+    }
+
+    function getNextLogTime(batch) {
+      const lastSeconds = [...batch.logs]
+        .reverse()
+        .map((log) => parseTimeToSeconds(log.time))
+        .find((seconds) => Number.isFinite(seconds));
+      return formatDuration(Number.isFinite(lastSeconds) ? lastSeconds + 30 : 0);
+    }
+
+    function renderBeanFields() {
+      beanFields.forEach((field) => {
+        const node = document.querySelector(`[data-field="bean.${field}"]`);
+        if (node) node.value = state.bean[field] || "";
+      });
+      document.querySelector(`[data-field="decision.winner"]`).value = state.decision.winner;
+      document.querySelector(`[data-field="decision.conclusion"]`).value = state.decision.conclusion;
+    }
+
+    function renderChartToggles() {
+      document.querySelector("#chart-toggles").innerHTML = state.batches.map((batch, index) => `
+        <label class="checkline" style="--batch-color: ${colors[index]}">
+          <input type="checkbox" data-batch-enabled="${index}" ${batch.enabled ? "checked" : ""}>
+          <span style="color: ${colors[index]}">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</span>
+        </label>
+      `).join("");
+    }
+
+    function renderBatchTabs() {
+      batchTabs.innerHTML = state.batches.map((batch, index) => `
+        <button class="tab ${state.activeBatch === index ? "active" : ""}" type="button" data-tab="${index}" style="border-color:${state.activeBatch === index ? colors[index] : ""}">
+          ${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}
+        </button>
+      `).join("");
+    }
+
+    function renderBatchPanels() {
+      batchPanels.innerHTML = state.batches.map((batch, index) => `
+        <div class="batch-panel ${state.activeBatch === index ? "active" : ""}" data-panel="${index}">
+          <div class="subsection">
+            <h3 style="color:${colors[index]}">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}：烘法設定</h3>
+            <div class="grid">
+              <label>鍋次名稱
+                <input data-batch="${index}" data-batch-field="name" value="${escapeHtml(batch.name)}">
+              </label>
+              <label>烘法策略
+                <input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}" placeholder="例如：基準 / 拉長梅納 / 延長發展">
+              </label>
+              <label>預計烘焙程度
+                <input data-batch="${index}" data-batch-field="targetRoast" value="${escapeHtml(batch.targetRoast)}">
+              </label>
+              <label>實際烘焙度
+                <input data-batch="${index}" data-batch-field="actualRoast" value="${escapeHtml(batch.actualRoast)}">
+              </label>
+              <label>生豆量 (g)
+                <input data-batch="${index}" data-batch-field="greenWeight" value="${escapeHtml(batch.greenWeight)}" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>烘後重量 (g)
+                <input data-batch="${index}" data-batch-field="roastedWeight" value="${escapeHtml(batch.roastedWeight)}" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>烘焙機
+                <input data-batch="${index}" data-batch-field="roaster" value="${escapeHtml(batch.roaster)}">
+              </label>
+              <label>操作者
+                <input data-batch="${index}" data-batch-field="operator" value="${escapeHtml(batch.operator)}">
+              </label>
+              <label class="span-2">火力策略
+                <input data-batch="${index}" data-batch-field="heatPlan" value="${escapeHtml(batch.heatPlan)}" placeholder="例如：入豆 70%，轉黃後降至 55%">
+              </label>
+              <label>風門策略
+                <input data-batch="${index}" data-batch-field="damperPlan" value="${escapeHtml(batch.damperPlan)}">
+              </label>
+              <label>轉速
+                <input data-batch="${index}" data-batch-field="drumSpeed" value="${escapeHtml(batch.drumSpeed)}">
+              </label>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>重要階段</h3>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>階段</th><th>時間</th><th>溫度 (°C)</th><th>備註</th></tr>
+                </thead>
+                <tbody>
+                  ${batch.milestones.map((milestone, milestoneIndex) => `
+                    <tr>
+                      <td>${escapeHtml(milestone.name)}</td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>單鍋烘焙曲線</h3>
+            <svg class="single-chart" id="single-chart-${index}" viewBox="0 0 900 380" role="img" aria-label="${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}單鍋烘焙曲線"></svg>
+          </div>
+
+          <div class="subsection">
+            <div class="section-head" style="padding:0 0 12px;border-bottom:0;">
+              <h3>30 秒詳細數據</h3>
+              <button class="ghost add-row" type="button" data-add-log="${index}">＋ 新增 30 秒列</button>
+            </div>
+            <div class="table-scroll">
+              <table class="log-table">
+                <thead>
+                  <tr><th>時間</th><th>溫度 (°C)</th><th>RoR</th><th>備註(火力 / 風門等)</th><th></th></tr>
+                </thead>
+                <tbody>
+                  ${batch.logs.map((log, logIndex) => `
+                    <tr>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="ror" value="${escapeHtml(log.ror)}" inputmode="decimal"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></td>
+                      <td><button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderBatchCards() {
+      batchCards.innerHTML = state.batches.map((batch, index) => `
+        <div class="batch-card" style="--batch-color:${colors[index]}">
+          <strong>${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</strong>
+          <span>策略：${escapeHtml(batch.strategy || "未填寫")}</span>
+          <span>損失率：${getLossRate(batch) ? `${getLossRate(batch)}%` : "--"}　發展：${getDevelopmentTime(batch)}　最高：${getHighestTemp(batch)}</span>
+          <span>杯測：${escapeHtml(batch.cupping.score || "--")}　判斷：${escapeHtml(batch.cupping.judgement || "尚未填寫")}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderCuppingTable() {
+      cuppingBody.innerHTML = state.batches.map((batch, index) => `
+        <tr>
+          <td style="color:${colors[index]};font-weight:700;">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</td>
+          ${cuppingFields.map((field) => `
+            <td><input data-cupping="${index}" data-field="${field}" value="${escapeHtml(batch.cupping[field])}"></td>
+          `).join("")}
+        </tr>
+      `).join("");
+    }
+
+    function getBatchPoints(batch) {
+      return batch.logs
+        .map((log) => ({
+          time: parseTimeToSeconds(log.time),
+          temp: Number(log.temp),
+          note: log.note
+        }))
+        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
+        .sort((a, b) => a.time - b.time);
+    }
+
+    function renderChart() {
+      const series = state.batches
+        .map((batch, index) => ({ batch, index, points: getBatchPoints(batch) }))
+        .filter((item) => item.batch.enabled && item.points.length >= 2);
+
+      const width = 980;
+      const height = 460;
+      const left = 68;
+      const right = 34;
+      const top = 42;
+      const bottom = 68;
+      const plotWidth = width - left - right;
+      const plotHeight = height - top - bottom;
+
+      chart.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
+        <text x="${left}" y="26" fill="#344054" font-size="19" font-weight="700">同豆多鍋烘焙曲線疊圖</text>
+        <text x="${width - right}" y="26" text-anchor="end" fill="#66737f" font-size="13">橫軸：時間　縱軸：豆溫 °C</text>
+      `;
+
+      if (!series.length) {
+        chart.innerHTML += `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="#66737f" font-size="18">至少輸入一鍋兩筆以上時間與溫度，就能比較曲線</text>`;
+        return;
+      }
+
+      const allPoints = series.flatMap((item) => item.points);
+      const maxTime = Math.max(...allPoints.map((point) => point.time), 900);
+      const minTemp = Math.floor((Math.min(...allPoints.map((point) => point.temp), 80) - 10) / 10) * 10;
+      const maxTemp = Math.ceil((Math.max(...allPoints.map((point) => point.temp), 220) + 10) / 10) * 10;
+      const xScale = (time) => left + (time / Math.max(maxTime, 1)) * plotWidth;
+      const yScale = (temp) => top + plotHeight - ((temp - minTemp) / Math.max(maxTemp - minTemp, 1)) * plotHeight;
+      const yStep = maxTemp - minTemp > 120 ? 40 : 20;
+      const xStep = maxTime > 900 ? 180 : 120;
+
+      for (let temp = minTemp; temp <= maxTemp; temp += yStep) {
+        const y = yScale(temp);
+        chart.innerHTML += `
+          <line x1="${left}" y1="${y.toFixed(1)}" x2="${width - right}" y2="${y.toFixed(1)}" stroke="#e2e8f0"></line>
+          <text x="${left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#66737f" font-size="13">${temp}</text>
+        `;
+      }
+
+      for (let time = 0; time <= maxTime; time += xStep) {
+        const x = xScale(time);
+        chart.innerHTML += `
+          <line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top + plotHeight}" stroke="#eef2f6"></line>
+          <text x="${x.toFixed(1)}" y="${height - 30}" text-anchor="middle" fill="#66737f" font-size="13">${formatDuration(time)}</text>
+        `;
+      }
+
+      chart.innerHTML += `
+        <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1.5"></line>
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1.5"></line>
+        <text x="${left}" y="${height - 10}" fill="#475467" font-size="14">時間</text>
+        <text x="16" y="${top + 4}" fill="#475467" font-size="14">°C</text>
+      `;
+
+      series.forEach(({ batch, index, points }) => {
+        const path = points
+          .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
+          .join(" ");
+        chart.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        points.forEach((point, pointIndex) => {
+          const x = xScale(point.time);
+          const y = yScale(point.temp);
+          const shouldLabel = pointIndex === 0 || pointIndex === points.length - 1 || point.note;
+          chart.innerHTML += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
+          if (shouldLabel) {
+            chart.innerHTML += `<text x="${x.toFixed(1)}" y="${(y - 12 - index * 10).toFixed(1)}" text-anchor="middle" fill="${colors[index]}" font-size="12" font-weight="700">${escapeHtml(point.note || `${point.temp.toFixed(0)}°`)}</text>`;
+          }
+        });
+        chart.innerHTML += `
+          <circle cx="${left + index * 150}" cy="${height - 16}" r="5" fill="${colors[index]}"></circle>
+          <text x="${left + 12 + index * 150}" y="${height - 12}" fill="#344054" font-size="13">${escapeHtml(batch.name)}</text>
+        `;
+      });
+    }
+
+    function renderSingleBatchCharts() {
+      state.batches.forEach((batch, index) => {
+        const svg = document.querySelector(`#single-chart-${index}`);
+        if (!svg) return;
+
+        const points = getBatchPoints(batch);
+        const width = 900;
+        const height = 380;
+        const left = 66;
+        const right = 32;
+        const top = 42;
+        const bottom = 60;
+        const plotWidth = width - left - right;
+        const plotHeight = height - top - bottom;
+        const color = colors[index];
+
+        svg.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
+          <text x="${left}" y="26" fill="#344054" font-size="18" font-weight="700">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)} 單鍋曲線</text>
+          <text x="${width - right}" y="26" text-anchor="end" fill="#66737f" font-size="13">豆溫 °C / 時間</text>
+        `;
+
+        if (points.length < 2) {
+          svg.innerHTML += `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="#66737f" font-size="17">輸入至少兩筆時間與溫度後顯示單鍋曲線</text>`;
+          return;
+        }
+
+        const maxTime = Math.max(...points.map((point) => point.time), 900);
+        const minTemp = Math.floor((Math.min(...points.map((point) => point.temp), 80) - 10) / 10) * 10;
+        const maxTemp = Math.ceil((Math.max(...points.map((point) => point.temp), 220) + 10) / 10) * 10;
+        const xScale = (time) => left + (time / Math.max(maxTime, 1)) * plotWidth;
+        const yScale = (temp) => top + plotHeight - ((temp - minTemp) / Math.max(maxTemp - minTemp, 1)) * plotHeight;
+        const yStep = maxTemp - minTemp > 120 ? 40 : 20;
+        const xStep = maxTime > 900 ? 180 : 120;
+
+        for (let temp = minTemp; temp <= maxTemp; temp += yStep) {
+          const y = yScale(temp);
+          svg.innerHTML += `
+            <line x1="${left}" y1="${y.toFixed(1)}" x2="${width - right}" y2="${y.toFixed(1)}" stroke="#e2e8f0"></line>
+            <text x="${left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#66737f" font-size="13">${temp}</text>
+          `;
+        }
+
+        for (let time = 0; time <= maxTime; time += xStep) {
+          const x = xScale(time);
+          svg.innerHTML += `
+            <line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top + plotHeight}" stroke="#eef2f6"></line>
+            <text x="${x.toFixed(1)}" y="${height - 28}" text-anchor="middle" fill="#66737f" font-size="13">${formatDuration(time)}</text>
+          `;
+        }
+
+        svg.innerHTML += `
+          <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1.5"></line>
+          <line x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1.5"></line>
+          <text x="${left}" y="${height - 9}" fill="#475467" font-size="14">時間</text>
+          <text x="16" y="${top + 4}" fill="#475467" font-size="14">°C</text>
+        `;
+
+        const path = points
+          .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
+          .join(" ");
+
+        svg.innerHTML += `<path d="${path}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        points.forEach((point, pointIndex) => {
+          const x = xScale(point.time);
+          const y = yScale(point.temp);
+          const labelY = pointIndex % 2 === 0 ? y - 12 : y + 22;
+          svg.innerHTML += `
+            <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"></circle>
+            <text x="${x.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" fill="#344054" font-size="12" font-weight="700">${point.temp.toFixed(0)}°</text>
+          `;
+          if (point.note) {
+            svg.innerHTML += `<text x="${x.toFixed(1)}" y="${Math.max(top + 18, y - 30).toFixed(1)}" text-anchor="middle" fill="${color}" font-size="12">${escapeHtml(point.note)}</text>`;
+          }
+        });
+      });
+    }
+
+    function renderAll() {
+      renderBeanFields();
+      renderChartToggles();
+      renderBatchTabs();
+      renderBatchPanels();
+      renderCuppingTable();
+      renderBatchCards();
+      renderChart();
+      renderSingleBatchCharts();
+    }
+
+    function handleClearData() {
+      if (!window.confirm("確定要清除所有數據嗎？這會清空這份試烘比較紀錄。")) return;
+      state = createState();
+      renderAll();
+      save();
+      status.textContent = "已清除目前紀錄。";
+    }
+
+    function handleExportCSV() {
+      let csv = "\uFEFF";
+      csv += "=== 豆子與試烘目標 ===\n";
+      [
+        ["試烘日期", state.bean.date],
+        ["生豆品項", state.bean.beanItem],
+        ["來源", state.bean.source],
+        ["處理法", state.bean.process],
+        ["品種 / 海拔", state.bean.variety],
+        ["目標風味", state.bean.targetFlavor],
+        ["比較重點", state.bean.focus],
+        ["試烘假設", state.bean.hypothesis]
+      ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+
+      state.batches.forEach((batch, index) => {
+        csv += `\n=== ${batch.name || `第 ${index + 1} 鍋`} 烘法設定 ===\n`;
+        [
+          ["烘法策略", batch.strategy],
+          ["預計烘焙程度", batch.targetRoast],
+          ["實際烘焙度", batch.actualRoast],
+          ["生豆量 (g)", batch.greenWeight],
+          ["烘後重量 (g)", batch.roastedWeight],
+          ["損失率 (%)", getLossRate(batch)],
+          ["發展時間", getDevelopmentTime(batch)],
+          ["最高紀錄溫度", getHighestTemp(batch)],
+          ["火力策略", batch.heatPlan],
+          ["風門策略", batch.damperPlan],
+          ["轉速", batch.drumSpeed],
+          ["烘焙機", batch.roaster],
+          ["操作者", batch.operator]
+        ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+
+        csv += "\n重要階段\n階段,時間,溫度(°C),備註\n";
+        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
+
+        csv += "\n詳細數據\n時間,溫度(°C),RoR,備註\n";
+        batch.logs.forEach((log) => csv += [log.time, log.temp, log.ror, log.note].map(csvValue).join(",") + "\n");
+      });
+
+      csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,乾淨度,整體分數,判斷\n";
+      state.batches.forEach((batch) => {
+        csv += [batch.name, ...cuppingFields.map((field) => batch.cupping[field])].map(csvValue).join(",") + "\n";
+      });
+      csv += "\n=== 結論 ===\n";
+      const winner = state.decision.winner === "" ? "" : state.batches[Number(state.decision.winner)]?.name;
+      [["最適合烘法", winner], ["結論與下次調整", state.decision.conclusion]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeBeanItem = (state.bean.beanItem || "未命名").replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_").slice(0, 40);
+      link.href = url;
+      link.download = `試烘比較_${(state.bean.date || today()).replace(/-/g, "")}_${safeBeanItem}.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      status.textContent = "已匯出比較 CSV。";
+    }
+
+    document.addEventListener("input", (event) => {
+      const field = event.target.dataset.field;
+      if (field?.startsWith("bean.")) {
+        state.bean[field.split(".")[1]] = event.target.value;
+        save();
+        return;
+      }
+      if (field?.startsWith("decision.")) {
+        state.decision[field.split(".")[1]] = event.target.value;
+        save();
+        return;
+      }
+      if (event.target.dataset.batchField) {
+        const index = Number(event.target.dataset.batch);
+        state.batches[index][event.target.dataset.batchField] = event.target.value;
+        renderBatchTabs();
+        save();
+        return;
+      }
+      if (event.target.dataset.milestone) {
+        const batchIndex = Number(event.target.dataset.milestone);
+        const milestoneIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].milestones[milestoneIndex][event.target.dataset.field] = event.target.value;
+        save();
+        return;
+      }
+      if (event.target.dataset.log) {
+        const batchIndex = Number(event.target.dataset.log);
+        const logIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        save();
+        return;
+      }
+      if (event.target.dataset.cupping) {
+        const batchIndex = Number(event.target.dataset.cupping);
+        state.batches[batchIndex].cupping[event.target.dataset.field] = event.target.value;
+        save();
+      }
+    });
+
+    document.addEventListener("change", (event) => {
+      if (event.target.dataset.batchEnabled) {
+        state.batches[Number(event.target.dataset.batchEnabled)].enabled = event.target.checked;
+        save();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-tab]");
+      if (tab) {
+        state.activeBatch = Number(tab.dataset.tab);
+        renderBatchTabs();
+        renderBatchPanels();
+        renderSingleBatchCharts();
+        return;
+      }
+
+      const addLog = event.target.closest("[data-add-log]");
+      if (addLog) {
+        const index = Number(addLog.dataset.addLog);
+        const batch = state.batches[index];
+        batch.logs.push({ time: getNextLogTime(batch), temp: "", ror: "", note: "" });
+        renderBatchPanels();
+        renderSingleBatchCharts();
+        save();
+        return;
+      }
+
+      const deleteLog = event.target.closest("[data-delete-log]");
+      if (deleteLog) {
+        const batchIndex = Number(deleteLog.dataset.deleteLog);
+        const logIndex = Number(deleteLog.dataset.index);
+        if (state.batches[batchIndex].logs.length <= 1) return;
+        state.batches[batchIndex].logs.splice(logIndex, 1);
+        renderBatchPanels();
+        renderSingleBatchCharts();
+        save();
+      }
+    });
+
+    document.querySelector("#clear-button").addEventListener("click", handleClearData);
+    document.querySelector("#export-button").addEventListener("click", handleExportCSV);
+    document.querySelector("#print-button").addEventListener("click", () => window.print());
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js");
+      });
+    }
+
+    load();
+    renderAll();
+  </script>
+</body>
+</html>
