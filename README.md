@@ -22,6 +22,10 @@
 
 ## 開啟方式
 
+線上分享版：
+
+`https://tu2hank.github.io/coffee-roast-curve-app/`
+
 直接開啟：
 
 `file:///G:/我的雲端硬碟/2026codex/咖啡烘培紀錄表單製作/index.html`
