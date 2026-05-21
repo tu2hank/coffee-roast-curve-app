@@ -421,10 +421,10 @@
       }).join("")}`;
     }
     function initialLogs() {
-      return Array.from({ length: 27 }, (_, index) => ({ time: formatDuration(index * 30), temp: "", ror: "", stage: index === 0 ? "入豆" : "", stageTime: index === 0 ? "00:00" : "", exactTime: "", note: "" }));
+      return Array.from({ length: 27 }, (_, index) => ({ time: formatDuration(index * 30), temp: "", ror: "", stage: index === 0 ? "入豆" : "", stageTime: index === 0 ? "00:00" : "", exactTemp: "", note: "" }));
     }
     function initialMilestones() {
-      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", exactTime: "", temp: "", note: "" }));
+      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", exactTemp: "", temp: "", note: "" }));
     }
     function createBatch(index) {
       return {
@@ -506,7 +506,7 @@
           ror: log.ror || "",
           stage,
           stageTime: log.stageTime || (stage ? log.time || "" : ""),
-          exactTime: log.exactTime || "",
+          exactTemp: log.exactTemp || log.exactTime || "",
           note: stage && log.note === stage ? "" : log.note || ""
         };
       });
@@ -563,13 +563,13 @@
     function stagePoint(batch, stageName) {
       const log = batch.logs.find((item) => item.stage === stageName);
       if (log) {
-        const time = parseTimeToSeconds(log.stageTime || log.exactTime || log.time);
-        const temp = Number(log.temp);
+        const time = parseTimeToSeconds(log.stageTime || log.time);
+        const temp = Number(log.exactTemp || log.exactTime || log.temp);
         if (Number.isFinite(time)) return { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null };
       }
       const milestone = batch.milestones.find((item) => item.name === stageName);
-      const time = parseTimeToSeconds(milestone?.time || milestone?.exactTime);
-      const temp = Number(milestone?.temp);
+      const time = parseTimeToSeconds(milestone?.time);
+      const temp = Number(milestone?.exactTemp || milestone?.exactTime || milestone?.temp);
       return Number.isFinite(time) ? { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null } : null;
     }
 
@@ -628,7 +628,7 @@
 
     function milestoneTime(batch, name) {
       const logStage = batch.logs.find((log) => log.stage === name);
-      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.exactTime || logStage?.time);
+      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.time);
       if (Number.isFinite(logStageTime)) return logStageTime;
       const milestone = batch.milestones.find((item) => item.name === name);
       return parseTimeToSeconds(milestone?.time);
@@ -641,8 +641,8 @@
       const milestone = batch.milestones.find((item) => item.name === log.stage);
       if (milestone) {
         milestone.time = log.stageTime || log.time || "";
-        milestone.exactTime = log.exactTime || "";
-        milestone.temp = log.temp || "";
+        milestone.exactTemp = log.exactTemp || log.exactTime || "";
+        milestone.temp = log.exactTemp || log.exactTime || log.temp || "";
       }
     }
 
@@ -654,8 +654,8 @@
           const milestone = batch.milestones.find((item) => item.name === log.stage);
           if (!milestone) return;
           milestone.time = log.stageTime || log.time || "";
-          milestone.exactTime = log.exactTime || "";
-          milestone.temp = log.temp || "";
+          milestone.exactTemp = log.exactTemp || log.exactTime || "";
+          milestone.temp = log.exactTemp || log.exactTime || log.temp || "";
         });
     }
 
@@ -729,8 +729,8 @@
                       ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
                     </select>
                   </label>
-                  <label>階段時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></label>
-                  <label>精確時間<input data-log="${index}" data-index="${logIndex}" data-field="exactTime" value="${escapeHtml(log.exactTime || "")}" placeholder="mm:ss"></label>
+                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></label>
+                  <label>精確溫度<input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" inputmode="decimal"></label>
                   <label>備註<input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></label>
                 </div>
               </div>
@@ -745,8 +745,8 @@
               <div class="milestone-card">
                 <div class="log-head"><span>${escapeHtml(milestone.name)}</span></div>
                 <div class="mini-grid">
-                  <label>階段時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></label>
-                  <label>精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTime" value="${escapeHtml(milestone.exactTime || "")}" placeholder="mm:ss"></label>
+                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></label>
+                  <label>精確溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" inputmode="decimal"></label>
                   <label>溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></label>
                 </div>
                 <label style="margin-top:8px;">備註<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></label>
@@ -870,10 +870,10 @@
         syncMilestonesFromLogs(batch);
         csv += `\n=== ${batch.name || `第 ${index + 1} 鍋`} ===\n`;
         [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
-        csv += "\n詳細數據\n時間,溫度,RoR,重要階段,階段時間,精確時間,備註\n";
-        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, autoRor(batch, logIndex), log.stage, log.stageTime, log.exactTime, log.note].map(csvValue).join(",") + "\n");
-        csv += "\n重要階段\n階段,階段時間,精確時間,溫度,備註\n";
-        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
+        csv += "\n詳細數據\n時間,溫度,RoR,重要階段,階段精確時間,精確溫度,備註\n";
+        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, autoRor(batch, logIndex), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note].map(csvValue).join(",") + "\n");
+        csv += "\n重要階段\n階段,階段精確時間,精確溫度,溫度,備註\n";
+        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -941,7 +941,7 @@
           status.textContent = "已到 13:00，不再新增時間列。";
           return;
         }
-        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", exactTime: "", note: "" });
+        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", exactTemp: "", note: "" });
         renderBatchPanel();
         save();
         return;
