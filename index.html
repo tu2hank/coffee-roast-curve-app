@@ -296,7 +296,7 @@
 
     .table-scroll { overflow-x: auto; }
 
-    .log-table { min-width: 1120px; }
+    .log-table { min-width: 1220px; }
     .compare-table { min-width: 980px; }
 
     th,
@@ -528,12 +528,13 @@
         ror: "",
         stage: index === 0 ? "入豆" : "",
         stageTime: index === 0 ? "00:00" : "",
+        exactTime: "",
         note: ""
       }));
     }
 
     function getInitialMilestones() {
-      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", temp: "", note: "" }));
+      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", exactTime: "", temp: "", note: "" }));
     }
 
     function createBatch(index) {
@@ -587,14 +588,18 @@
       if (!saved || typeof saved !== "object") return fresh;
       return {
         bean: Object.fromEntries(beanFields.map((field) => [field, saved.bean?.[field] ?? fresh.bean[field]])),
-        batches: fresh.batches.map((batch, index) => ({
-          ...batch,
-          ...(saved.batches?.[index] || {}),
-          strategy: normalizeStrategy(saved.batches?.[index]?.strategy || batch.strategy),
-          milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
-          logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
-          cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
-        })),
+        batches: fresh.batches.map((batch, index) => {
+          const normalized = {
+            ...batch,
+            ...(saved.batches?.[index] || {}),
+            strategy: normalizeStrategy(saved.batches?.[index]?.strategy || batch.strategy),
+            milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
+            logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
+            cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
+          };
+          syncMilestonesFromLogs(normalized);
+          return normalized;
+        }),
         activeBatch: Number.isInteger(saved.activeBatch) ? Math.max(0, Math.min(2, saved.activeBatch)) : fresh.activeBatch,
         decision: { ...fresh.decision, ...(saved.decision || {}) }
       };
@@ -641,12 +646,13 @@
         const stage = log.stage || (milestoneNames.includes(log.note) ? log.note : "");
         return {
           time: log.time || "",
-          temp: log.temp || "",
-          ror: log.ror || "",
-          stage,
-          stageTime: log.stageTime || (stage ? log.time || "" : ""),
-          note: stage && log.note === stage ? "" : log.note || ""
-        };
+        temp: log.temp || "",
+        ror: log.ror || "",
+        stage,
+        stageTime: log.stageTime || (stage ? log.time || "" : ""),
+        exactTime: log.exactTime || "",
+        note: stage && log.note === stage ? "" : log.note || ""
+      };
       });
       return logs.length ? logs : freshLogs;
     }
@@ -705,7 +711,7 @@
 
     function getMilestoneTime(batch, name) {
       const logStage = batch.logs.find((log) => log.stage === name);
-      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.time);
+      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.exactTime || logStage?.time);
       if (Number.isFinite(logStageTime)) return logStageTime;
       const milestone = batch.milestones.find((item) => item.name === name);
       return parseTimeToSeconds(milestone?.time);
@@ -717,9 +723,23 @@
       if (!log.stageTime) log.stageTime = log.time || "";
       const milestone = batch.milestones.find((item) => item.name === log.stage);
       if (milestone) {
-        if (!milestone.time) milestone.time = log.stageTime || log.time || "";
-        if (!milestone.temp) milestone.temp = log.temp || "";
+        milestone.time = log.stageTime || log.time || "";
+        milestone.exactTime = log.exactTime || "";
+        milestone.temp = log.temp || "";
       }
+    }
+
+    function syncMilestonesFromLogs(batch) {
+      batch.logs
+        .filter((log) => log.stage)
+        .sort((a, b) => (parseTimeToSeconds(a.stageTime || a.time) ?? 0) - (parseTimeToSeconds(b.stageTime || b.time) ?? 0))
+        .forEach((log) => {
+          const milestone = batch.milestones.find((item) => item.name === log.stage);
+          if (!milestone) return;
+          milestone.time = log.stageTime || log.time || "";
+          milestone.exactTime = log.exactTime || "";
+          milestone.temp = log.temp || "";
+        });
     }
 
     function updateAutoRorFields() {
@@ -803,13 +823,14 @@
             <div class="table-scroll">
               <table>
                 <thead>
-                  <tr><th>階段</th><th>時間</th><th>溫度 (°C)</th><th>備註</th></tr>
+                  <tr><th>階段</th><th>階段時間</th><th>精確時間</th><th>溫度 (°C)</th><th>備註</th></tr>
                 </thead>
                 <tbody>
                   ${batch.milestones.map((milestone, milestoneIndex) => `
                     <tr>
                       <td>${escapeHtml(milestone.name)}</td>
                       <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTime" value="${escapeHtml(milestone.exactTime || "")}" placeholder="mm:ss"></td>
                       <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></td>
                       <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></td>
                     </tr>
@@ -832,7 +853,7 @@
             <div class="table-scroll">
               <table class="log-table">
                 <thead>
-                  <tr><th>時間</th><th>溫度 (°C)</th><th>RoR</th><th>重要階段</th><th>階段時間</th><th>備註(火力 / 風門等)</th><th></th></tr>
+                  <tr><th>時間</th><th>溫度 (°C)</th><th>RoR</th><th>重要階段</th><th>階段時間</th><th>精確時間</th><th>備註(火力 / 風門等)</th><th></th></tr>
                 </thead>
                 <tbody>
                   ${batch.logs.map((log, logIndex) => `
@@ -847,6 +868,7 @@
                         </select>
                       </td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="exactTime" value="${escapeHtml(log.exactTime || "")}" placeholder="mm:ss"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></td>
                       <td><button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button></td>
                     </tr>
@@ -1164,11 +1186,12 @@
           ["操作者", batch.operator]
         ].forEach((row) => csv += row.map(csvValue).join(",") + "\n");
 
-        csv += "\n重要階段\n階段,時間,溫度(°C),備註\n";
-        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
+        syncMilestonesFromLogs(batch);
+        csv += "\n重要階段\n階段,階段時間,精確時間,溫度(°C),備註\n";
+        batch.milestones.forEach((milestone) => csv += [milestone.name, milestone.time, milestone.exactTime, milestone.temp, milestone.note].map(csvValue).join(",") + "\n");
 
-        csv += "\n詳細數據\n時間,溫度(°C),RoR,重要階段,階段時間,備註\n";
-        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.note].map(csvValue).join(",") + "\n");
+        csv += "\n詳細數據\n時間,溫度(°C),RoR,重要階段,階段時間,精確時間,備註\n";
+        batch.logs.forEach((log, logIndex) => csv += [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.exactTime, log.note].map(csvValue).join(",") + "\n");
       });
 
       csv += "\n=== 杯測比較 ===\n鍋次,乾香/濕香,酸質,甜感,醇厚度,餘韻,乾淨度,整體分數,判斷\n";
@@ -1268,7 +1291,7 @@
           status.textContent = "已到 13:00，不再新增時間列。";
           return;
         }
-        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", note: "" });
+        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", exactTime: "", note: "" });
         renderBatchPanels();
         renderSingleBatchCharts();
         save();
