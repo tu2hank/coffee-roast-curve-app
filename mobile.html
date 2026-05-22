@@ -645,16 +645,16 @@
         }).join("");
     }
 
-    function noteAnnotations(series, xScale, yScale, top, bottomLimit, compact = false) {
+    function noteAnnotations(series, xScale, yScale, top, plotBottom, compact = false) {
       return series.flatMap(({ batch, index }) => batch.logs
         .map((log) => ({ time: parseTimeToSeconds(log.time), temp: Number(log.temp), note: String(log.note || "").trim(), index, log }))
         .filter((item) => item.note && Number.isFinite(item.time) && Number.isFinite(item.temp) && item.temp > 0 && !isAfterDrop(batch, item.log))
       ).map((item, noteIndex) => {
         const x = xScale(item.time);
         const y = yScale(item.temp);
-        const offset = compact ? 18 : 22;
-        const labelY = Math.max(top + 16, Math.min(bottomLimit - 10, y + (noteIndex % 2 === 0 ? -offset : offset)));
-        return `<line x1="${x}" y1="${y}" x2="${x}" y2="${labelY}" stroke="${colors[item.index]}" stroke-width="1" opacity="0.7"></line><text x="${x + 4}" y="${labelY}" fill="${colors[item.index]}" font-size="${compact ? 9 : 10}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(item.note)}</text>`;
+        const laneHeight = compact ? 12 : 14;
+        const labelY = plotBottom + (compact ? 18 : 22) + (noteIndex % 3) * laneHeight;
+        return `<line x1="${x}" y1="${y}" x2="${x}" y2="${plotBottom + 8}" stroke="${colors[item.index]}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"></line><text x="${x + 4}" y="${labelY}" fill="${colors[item.index]}" font-size="${compact ? 9 : 10}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(item.note)}</text>`;
       }).join("");
     }
 
@@ -844,7 +844,7 @@
     }
 
     function drawChart(svg, series, title) {
-      const width = 900, height = 500, left = 62, right = 26, top = 118, bottom = 58;
+      const width = 900, height = 500, left = 62, right = 26, top = 118, bottom = 92;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
       svg.innerHTML = `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect><text x="${left}" y="24" fill="#344054" font-size="18" font-weight="700">${title}</text>`;
