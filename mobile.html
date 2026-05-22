@@ -299,6 +299,20 @@
       .toolbar { grid-template-columns: repeat(4, 1fr); }
       .chart { height: 430px; }
     }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      .toolbar,
+      .tabs,
+      .icon-button,
+      button { display: none !important; }
+      body { background: #fff; }
+      section,
+      .card,
+      .log-card,
+      .milestone-card { break-inside: avoid; page-break-inside: avoid; }
+      .after-drop { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -420,14 +434,15 @@
     function xlsHeader(values) {
       return `<tr>${values.map((value) => `<th>${escapeHtml(value)}</th>`).join("")}</tr>`;
     }
-    function xlsSection(title, columns, rows) {
-      return `<tr><td class="section" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>${xlsHeader(columns)}${rows.map((row) => `<tr>${row.map((value) => xlsCell(value)).join("")}</tr>`).join("")}<tr class="gap"><td colspan="${Math.max(columns.length, 2)}"></td></tr>`;
+    function xlsSection(title, columns, rows, batchIndex = null) {
+      const batchClass = Number.isInteger(batchIndex) ? ` batch-${batchIndex}` : "";
+      return `<tr><td class="section${batchClass}" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>${xlsHeader(columns)}${rows.map((row) => `<tr>${row.map((value) => xlsCell(value)).join("")}</tr>`).join("")}<tr class="gap"><td colspan="${Math.max(columns.length, 2)}"></td></tr>`;
     }
     function downloadWorkbook(filename, bodyRows) {
       const html = `<!doctype html><html><head><meta charset="utf-8"><style>
         body{font-family:"Microsoft JhengHei",Arial,sans-serif} table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #d9c7b8;padding:6px 8px;font-size:12px;vertical-align:top;mso-number-format:"\\@"}
-        th{background:#f3e6d8;font-weight:700;text-align:center}.title{background:#8a4b20;color:#fff;font-size:18px;font-weight:800;text-align:center}.section{background:#d97706;color:#fff;font-weight:800;font-size:14px}.gap td,tr.gap td{border:0;height:12px}
+        th,td{border:1px solid #d9c7b8;padding:6px 8px;font-size:12px;vertical-align:middle;text-align:center;mso-number-format:"\\@"}
+        th{background:#f3e6d8;font-weight:700;text-align:center}.title{background:#8a4b20;color:#fff;font-size:18px;font-weight:800;text-align:center}.section{background:#d97706;color:#fff;font-weight:800;font-size:14px}.batch-0{background:#dbeafe;color:#1e3a8a}.batch-1{background:#dcfce7;color:#14532d}.batch-2{background:#fee2e2;color:#991b1b}.gap td,tr.gap td{border:0;height:12px}
       </style></head><body><table><colgroup>${Array.from({ length: 10 }, () => "<col style='width:120px'>").join("")}</colgroup>${bodyRows}</table></body></html>`;
       const blob = new Blob(["\uFEFF", html], { type: "application/vnd.ms-excel;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -572,6 +587,16 @@
       return MAX_CHART_TIME;
     }
 
+    function isAfterDrop(batch, log) {
+      const dropTime = milestoneTime(batch, "下豆");
+      const time = parseTimeToSeconds(log?.time);
+      return Number.isFinite(dropTime) && Number.isFinite(time) && time > dropTime;
+    }
+
+    function exportLogs(batch) {
+      return batch.logs.filter((log) => !isAfterDrop(batch, log));
+    }
+
     function chartPoints(batch) {
       const endTime = chartEndTime(batch);
       return batchPoints(batch).filter((point) => point.time <= endTime);
@@ -614,10 +639,23 @@
           const titleY = top - (compact ? 58 : 68);
           const rows = stage.entries.map((entry, rowIndex) => {
             const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
-            return `<text x="${x}" y="${titleY + 16 + rowIndex * (compact ? 11 : 12)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 9 : 10}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+            return `<text x="${x}" y="${titleY + 18 + rowIndex * (compact ? 13 : 14)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 11 : 12}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
           }).join("");
-          return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-dasharray="4 4"></line><text x="${x}" y="${titleY}" text-anchor="middle" fill="#111827" font-size="${compact ? 10 : 11}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>${rows}`;
+          return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-dasharray="4 4"></line><text x="${x}" y="${titleY}" text-anchor="middle" fill="#111827" font-size="${compact ? 12 : 13}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>${rows}`;
         }).join("");
+    }
+
+    function noteAnnotations(series, xScale, yScale, top, bottomLimit, compact = false) {
+      return series.flatMap(({ batch, index }) => batch.logs
+        .map((log) => ({ time: parseTimeToSeconds(log.time), temp: Number(log.temp), note: String(log.note || "").trim(), index, log }))
+        .filter((item) => item.note && Number.isFinite(item.time) && Number.isFinite(item.temp) && item.temp > 0 && !isAfterDrop(batch, item.log))
+      ).map((item, noteIndex) => {
+        const x = xScale(item.time);
+        const y = yScale(item.temp);
+        const offset = compact ? 18 : 22;
+        const labelY = Math.max(top + 16, Math.min(bottomLimit - 10, y + (noteIndex % 2 === 0 ? -offset : offset)));
+        return `<line x1="${x}" y1="${y}" x2="${x}" y2="${labelY}" stroke="${colors[item.index]}" stroke-width="1" opacity="0.7"></line><text x="${x + 4}" y="${labelY}" fill="${colors[item.index]}" font-size="${compact ? 9 : 10}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(item.note)}</text>`;
+      }).join("");
     }
 
     function nextLogTime(batch) {
@@ -739,7 +777,7 @@
           </div>
           <div class="log-list">
             ${batch.logs.map((log, logIndex) => `
-              <div class="log-card">
+              <div class="log-card ${isAfterDrop(batch, log) ? "after-drop" : ""}">
                 <div class="log-head">
                   <span>${escapeHtml(log.time || `第 ${logIndex + 1} 筆`)}</span>
                   <button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button>
@@ -843,10 +881,10 @@
       svg.innerHTML += stageAnnotations(series, xScale, top, plotHeight, left, width - right, series.length === 1);
       series.forEach(({ batch, index, points }) => {
         const path = points.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`).join(" ");
-        svg.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        svg.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>`;
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time), y = yScale(point.temp);
-          svg.innerHTML += `<circle cx="${x}" cy="${y}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
+          svg.innerHTML += `<circle cx="${x}" cy="${y}" r="6.5" fill="${colors[index]}" stroke="#fff" stroke-width="2.2"></circle>`;
         });
         const endPoint = points[points.length - 1];
         svg.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10)}" y="${yScale(endPoint.temp) + (index - 1) * 18}" fill="${colors[index]}" font-size="12" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
@@ -856,6 +894,7 @@
           svg.innerHTML += `<path d="${rorPath}" fill="none" stroke="${colors[index]}" stroke-width="2.5" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"></path>`;
         }
       });
+      svg.innerHTML += noteAnnotations(series, xScale, yScale, top, top + plotHeight, series.length === 1);
       svg.innerHTML += `<text x="${width - right - 6}" y="${height - 8}" text-anchor="end" fill="#475467" font-size="11">實線豆溫 / 虛線 RoR</text>`;
     }
 
@@ -892,9 +931,9 @@
       rows += xlsSection("豆子與試烘目標", ["項目", "內容"], [["試烘日期", state.bean.date], ["生豆品項", state.bean.beanItem], ["處理法", state.bean.process], ["假設條件", state.bean.hypothesis]]);
       state.batches.forEach((batch, index) => {
         syncMilestonesFromLogs(batch);
-        rows += xlsSection(`${batch.name || `第 ${index + 1} 鍋`} 烘法設定`, ["項目", "內容"], [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]]);
-        rows += xlsSection("30 秒詳細數據", ["時間", "溫度", "RoR", "重要階段", "階段精確時間", "精確溫度", "備註"], batch.logs.map((log, logIndex) => [log.time, log.temp, autoRor(batch, logIndex), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note]));
-        rows += xlsSection("重要階段", ["階段", "階段精確時間", "精確溫度", "溫度", "備註"], batch.milestones.map((milestone) => [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note]));
+        rows += xlsSection(`${batch.name || `第 ${index + 1} 鍋`} 烘法設定`, ["項目", "內容"], [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]], index);
+        rows += xlsSection("30 秒詳細數據", ["時間", "溫度", "RoR", "重要階段", "階段精確時間", "精確溫度", "備註"], exportLogs(batch).map((log) => [log.time, log.temp, autoRor(batch, batch.logs.indexOf(log)), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note]), index);
+        rows += xlsSection("重要階段", ["階段", "階段精確時間", "精確溫度", "溫度", "備註"], batch.milestones.map((milestone) => [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note]), index);
       });
       rows += xlsSection("杯測比較", ["鍋次", "乾香/濕香", "酸質", "甜感", "醇厚度", "餘韻", "整體分數", "判斷"], state.batches.map((batch) => [batch.name, ...cuppingFields.map((field) => batch.cupping[field])]));
       const winner = state.decision.winner === "" ? "" : state.batches[Number(state.decision.winner)]?.name;

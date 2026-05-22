@@ -367,6 +367,7 @@
     }
 
     @media print {
+      @page { size: A4 landscape; margin: 10mm; }
       body { background: #fff; }
       main { width: auto; padding: 0; }
       .actions,
@@ -375,6 +376,11 @@
       .add-row,
       .status { display: none !important; }
       section { box-shadow: none; break-inside: avoid; margin-bottom: 12px; }
+      table { page-break-inside: auto; }
+      tr { break-inside: avoid; page-break-inside: avoid; }
+      thead { display: table-header-group; }
+      .table-scroll { overflow: visible; }
+      .after-drop { display: none !important; }
       .batch-panel { display: grid !important; }
       .chart { height: 450px; }
       .single-chart { height: 390px; }
@@ -533,9 +539,10 @@
       return rows.map((row) => `<tr>${row.map((value) => xlsCell(value)).join("")}</tr>`).join("");
     }
 
-    function xlsSection(title, columns, rows) {
+    function xlsSection(title, columns, rows, batchIndex = null) {
+      const batchClass = Number.isInteger(batchIndex) ? ` batch-${batchIndex}` : "";
       return `
-        <tr><td class="section" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>
+        <tr><td class="section${batchClass}" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>
         ${columns.length ? xlsHeader(columns) : ""}
         ${xlsRows(rows)}
         <tr class="gap"><td colspan="${Math.max(columns.length, 2)}"></td></tr>
@@ -548,10 +555,13 @@
         <style>
           body { font-family: "Microsoft JhengHei", Arial, sans-serif; }
           table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #d9c7b8; padding: 6px 8px; font-size: 12px; vertical-align: top; mso-number-format:"\\@"; }
+          th, td { border: 1px solid #d9c7b8; padding: 6px 8px; font-size: 12px; vertical-align: middle; text-align: center; mso-number-format:"\\@"; }
           th { background: #f3e6d8; font-weight: 700; text-align: center; }
           .title { background: #8a4b20; color: #fff; font-size: 18px; font-weight: 800; text-align: center; }
           .section { background: #d97706; color: #fff; font-weight: 800; font-size: 14px; }
+          .batch-0 { background: #dbeafe; color: #1e3a8a; }
+          .batch-1 { background: #dcfce7; color: #14532d; }
+          .batch-2 { background: #fee2e2; color: #991b1b; }
           .gap td, tr.gap td { border: 0; height: 12px; }
         </style></head><body><table>
         <colgroup>${Array.from({ length: 10 }, () => "<col style='width:120px'>").join("")}</colgroup>
@@ -883,7 +893,7 @@
                 </thead>
                 <tbody>
                   ${batch.logs.map((log, logIndex) => `
-                    <tr>
+                    <tr class="${isAfterDrop(batch, log) ? "after-drop" : ""}">
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></td>
                       <td><input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(getAutoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></td>
@@ -977,6 +987,16 @@
       return MAX_CHART_TIME;
     }
 
+    function isAfterDrop(batch, log) {
+      const dropTime = getMilestoneTime(batch, "下豆");
+      const time = parseTimeToSeconds(log?.time);
+      return Number.isFinite(dropTime) && Number.isFinite(time) && time > dropTime;
+    }
+
+    function getExportLogs(batch) {
+      return batch.logs.filter((log) => !isAfterDrop(batch, log));
+    }
+
     function getChartPoints(batch) {
       const endTime = getChartEndTime(batch);
       return getBatchPoints(batch).filter((point) => point.time <= endTime);
@@ -1026,13 +1046,34 @@
         const detailStartY = titleY + 17;
         const rows = stage.entries.map((entry, rowIndex) => {
           const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
-          return `<text x="${x.toFixed(1)}" y="${(detailStartY + rowIndex * (compact ? 12 : 14)).toFixed(1)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 10 : 12}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+          return `<text x="${x.toFixed(1)}" y="${(detailStartY + rowIndex * (compact ? 14 : 16)).toFixed(1)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 12 : 14}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
         }).join("");
 
         return `
           <line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1" stroke-dasharray="4 4"></line>
-          <text x="${x.toFixed(1)}" y="${titleY.toFixed(1)}" text-anchor="middle" fill="#111827" font-size="${compact ? 11 : 13}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>
+          <text x="${x.toFixed(1)}" y="${titleY.toFixed(1)}" text-anchor="middle" fill="#111827" font-size="${compact ? 13 : 15}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>
           ${rows}
+        `;
+      }).join("");
+    }
+
+    function renderNoteAnnotations(series, xScale, yScale, top, bottomLimit, compact = false) {
+      return series.flatMap(({ batch, index }) => batch.logs
+        .map((log) => ({
+          time: parseTimeToSeconds(log.time),
+          temp: Number(log.temp),
+          note: String(log.note || "").trim(),
+          index
+        }))
+        .filter((item) => item.note && Number.isFinite(item.time) && Number.isFinite(item.temp) && item.temp > 0 && !isAfterDrop(batch, { time: formatDuration(item.time) }))
+      ).map((item, noteIndex) => {
+        const x = xScale(item.time);
+        const y = yScale(item.temp);
+        const yOffset = compact ? 20 : 24;
+        const labelY = Math.max(top + 18, Math.min(bottomLimit - 12, y + (noteIndex % 2 === 0 ? -yOffset : yOffset)));
+        return `
+          <line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${labelY.toFixed(1)}" stroke="${colors[item.index]}" stroke-width="1" opacity="0.7"></line>
+          <text x="${(x + 4).toFixed(1)}" y="${labelY.toFixed(1)}" fill="${colors[item.index]}" font-size="${compact ? 10 : 12}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(item.note)}</text>
         `;
       }).join("");
     }
@@ -1112,11 +1153,11 @@
         const path = points
           .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
           .join(" ");
-        chart.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        chart.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>`;
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time);
           const y = yScale(point.temp);
-          chart.innerHTML += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${colors[index]}" stroke="#fff" stroke-width="2"></circle>`;
+          chart.innerHTML += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6.5" fill="${colors[index]}" stroke="#fff" stroke-width="2.2"></circle>`;
         });
         const endPoint = points[points.length - 1];
         chart.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10).toFixed(1)}" y="${(yScale(endPoint.temp) + (index - 1) * 18).toFixed(1)}" fill="${colors[index]}" font-size="13" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
@@ -1132,6 +1173,7 @@
           <text x="${left + 12 + index * 150}" y="${height - 12}" fill="#344054" font-size="13">${escapeHtml(batch.name)}</text>
         `;
       });
+      chart.innerHTML += renderNoteAnnotations(series, xScale, yScale, top, top + plotHeight);
       chart.innerHTML += `<text x="${width - right - 8}" y="${height - 12}" text-anchor="end" fill="#475467" font-size="12">實線=豆溫　虛線=RoR</text>`;
     }
 
@@ -1211,12 +1253,12 @@
           .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`)
           .join(" ");
 
-        svg.innerHTML += `<path d="${path}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        svg.innerHTML += `<path d="${path}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>`;
         points.forEach((point, pointIndex) => {
           const x = xScale(point.time);
           const y = yScale(point.temp);
           svg.innerHTML += `
-            <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="2"></circle>
+            <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6.5" fill="${color}" stroke="#fff" stroke-width="2.2"></circle>
           `;
         });
         const endPoint = points[points.length - 1];
@@ -1228,6 +1270,7 @@
           svg.innerHTML += `<path d="${rorPath}" fill="none" stroke="${color}" stroke-width="2.5" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"></path>`;
           svg.innerHTML += `<text x="${width - right - 8}" y="${height - 9}" text-anchor="end" fill="#475467" font-size="12">實線=豆溫　虛線=RoR</text>`;
         }
+        svg.innerHTML += renderNoteAnnotations([{ batch, index, points }], xScale, yScale, top, top + plotHeight, true);
       });
     }
 
@@ -1274,16 +1317,17 @@
           ["轉速", batch.drumSpeed],
           ["烘焙機", batch.roaster],
           ["操作者", batch.operator]
-        ]);
+        ], index);
 
         syncMilestonesFromLogs(batch);
         rows += xlsSection("30 秒詳細數據", ["時間", "溫度(°C)", "RoR", "重要階段", "階段精確時間", "精確溫度", "備註"],
-          batch.logs.map((log, logIndex) => [log.time, log.temp, getAutoRor(batch, logIndex), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note])
+          getExportLogs(batch).map((log) => [log.time, log.temp, getAutoRor(batch, batch.logs.indexOf(log)), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note]),
+          index
         );
 
         rows += xlsSection("重要階段", ["階段", "階段精確時間", "精確溫度", "溫度(°C)", "備註"],
           batch.milestones.map((milestone) => [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note])
-        );
+          , index);
       });
 
       rows += xlsSection("杯測比較", ["鍋次", "乾香/濕香", "酸質", "甜感", "醇厚度", "餘韻", "整體分數", "判斷"],
