@@ -3,43 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#a85513">
+  <meta name="theme-color" content="#6f4328">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="烘豆曲線">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>烘豆曲線紀錄</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./assets/icons/app-icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" type="image/png">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=bean-gen-1">
   <style>
     :root {
       color-scheme: light;
-      --ink: #1f2933;
-      --muted: #66737f;
-      --line: #d8dee4;
-      --paper: #f6f8f7;
-      --accent: #a85513;
-      --accent-dark: #7c3b0a;
-      --green: #14746f;
-      --red: #b42318;
-      --blue: #2454a6;
-      --shadow: 0 16px 42px rgba(31, 41, 51, 0.10);
+      --ink: #30251d;
+      --muted: #7b7068;
+      --line: #ded2c3;
+      --paper: #f4efe7;
+      --panel: #fffaf2;
+      --accent: #6f4328;
+      --accent-dark: #4d2d1b;
+      --green: #65745a;
+      --red: #9b3f32;
+      --blue: #4f6670;
+      --shadow: 0 10px 28px rgba(65, 43, 28, 0.08);
     }
 
     * { box-sizing: border-box; }
+
+    html,
+    body {
+      overflow-x: hidden;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
       font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
-      background: linear-gradient(180deg, #fff7ed 0%, var(--paper) 42%, #eef6f4 100%);
+      background: var(--paper);
       color: var(--ink);
     }
 
     main {
       width: min(1240px, calc(100vw - 32px));
       margin: 0 auto;
-      padding: 28px 0 42px;
+      padding: 32px 0 48px;
+      overflow-x: hidden;
     }
 
     header {
@@ -47,18 +54,34 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
       align-items: end;
-      margin-bottom: 18px;
+      margin-bottom: 22px;
+      max-width: 100%;
     }
 
     h1 {
       margin: 0;
-      font-size: 32px;
+      font-size: 31px;
       line-height: 1.15;
       letter-spacing: 0;
     }
 
+    .title-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    .title-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
     .subtitle {
-      margin: 8px 0 0;
+      margin: 10px 0 0;
       color: var(--muted);
       line-height: 1.6;
     }
@@ -71,13 +94,17 @@
       align-items: center;
     }
 
-    .actions { justify-content: flex-end; }
+    .actions {
+      justify-content: flex-end;
+      min-width: 0;
+      max-width: 100%;
+    }
 
     button {
-      min-height: 42px;
-      border: 1px solid transparent;
+      min-height: 40px;
+      border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 0 14px;
+      padding: 0 15px;
       font: inherit;
       font-weight: 700;
       cursor: pointer;
@@ -85,21 +112,22 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+      transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
     }
 
-    button:hover { transform: translateY(-1px); }
+    button:hover { border-color: var(--accent); }
 
     .primary { background: var(--accent); color: #fff; }
     .primary:hover { background: var(--accent-dark); }
-    .secondary { background: #ecfdfb; color: var(--green); border-color: #a7f3d0; }
-    .ghost { background: #fff7ed; color: var(--accent-dark); border-color: #fed7aa; }
-    .danger { background: #fff1f2; color: var(--red); border-color: #fecdd3; }
+    .secondary { background: #f2f5ee; color: var(--green); border-color: #cad4c0; }
+    .ghost { background: #fbf4e9; color: var(--accent-dark); border-color: #dcc7ad; }
+    .danger { background: #faf0ec; color: var(--red); border-color: #e2b8ad; }
 
     section {
+      max-width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.94);
+      background: var(--panel);
       box-shadow: var(--shadow);
     }
 
@@ -113,13 +141,13 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      padding: 16px 18px;
+      padding: 15px 20px;
       border-bottom: 1px solid var(--line);
     }
 
     h2 {
       margin: 0;
-      font-size: 19px;
+      font-size: 18px;
       line-height: 1.3;
       letter-spacing: 0;
     }
@@ -131,7 +159,7 @@
     }
 
     .content {
-      padding: 18px;
+      padding: 20px;
     }
 
     .grid {
@@ -147,7 +175,7 @@
     label {
       display: grid;
       gap: 6px;
-      color: #344054;
+      color: #4a3d34;
       font-size: 14px;
       font-weight: 700;
     }
@@ -156,12 +184,13 @@
     textarea,
     select {
       width: 100%;
-      border: 1px solid #b9c3cd;
+      min-width: 0;
+      border: 1px solid #cdbfaf;
       border-radius: 8px;
       padding: 10px 12px;
       font: inherit;
       color: var(--ink);
-      background: #fff;
+      background: #fffdf8;
     }
 
     input,
@@ -176,24 +205,30 @@
     input:focus,
     textarea:focus,
     select:focus {
-      outline: 3px solid rgba(168, 85, 19, 0.18);
+      outline: 3px solid rgba(111, 67, 40, 0.16);
       border-color: var(--accent);
     }
 
     .chart {
+      display: block;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       height: 560px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: #fffdf8;
     }
 
     .single-chart {
+      display: block;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       height: 440px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: #fffdf8;
     }
 
     .chart-tools {
@@ -210,7 +245,7 @@
       align-items: center;
       gap: 6px;
       font-weight: 700;
-      color: #344054;
+      color: #4a3d34;
     }
 
     .checkline input {
@@ -230,7 +265,7 @@
     .batch-card {
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fbfcfd;
+      background: #fffdf8;
       padding: 12px;
     }
 
@@ -255,18 +290,97 @@
       line-height: 1.45;
     }
 
+    .summary-board {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .summary-board h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+      overflow: hidden;
+    }
+
+    .summary-card h4 {
+      margin: 0;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f7efe4;
+      color: var(--accent-dark);
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .summary-list {
+      display: grid;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 1.15fr repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .summary-row:last-child {
+      border-bottom: 0;
+    }
+
+    .summary-cell {
+      text-align: center;
+      padding: 9px 8px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      min-width: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .summary-cell:first-child {
+      text-align: left;
+      font-weight: 700;
+      color: #4a3d34;
+      background: #fbf6ee;
+      border-left: 0;
+    }
+
+    .summary-head .summary-cell {
+      color: #5d5148;
+      background: #f6efe6;
+      font-weight: 800;
+    }
+
+    .summary-table-wrap {
+      width: 100%;
+    }
+
     .tabs {
       padding: 14px 18px 0;
     }
 
     .tab {
-      background: #f8fafc;
-      color: #475467;
+      background: #fbf6ee;
+      color: #65594f;
       border-color: var(--line);
     }
 
     .tab.active {
-      background: #fff7ed;
+      background: #f7efe4;
       color: var(--accent-dark);
       border-color: var(--accent);
     }
@@ -285,7 +399,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 14px;
-      background: #fff;
+      background: #fffdf8;
     }
 
     table {
@@ -308,8 +422,8 @@
     }
 
     th {
-      color: #475467;
-      background: #f8fafc;
+      color: #5d5148;
+      background: #f6efe6;
       font-size: 13px;
       white-space: nowrap;
     }
@@ -323,7 +437,7 @@
       width: 38px;
       min-height: 38px;
       padding: 0;
-      background: #f8fafc;
+      background: #fbf6ee;
       color: var(--muted);
       border-color: var(--line);
     }
@@ -331,7 +445,7 @@
     .icon-button:hover {
       color: var(--red);
       border-color: #fecdd3;
-      background: #fff1f2;
+      background: #faf0ec;
     }
 
     .status {
@@ -341,6 +455,43 @@
       line-height: 1.5;
     }
 
+    .history-panel {
+      display: none;
+    }
+
+    .history-panel.active {
+      display: block;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+      padding: 12px;
+    }
+
+    .history-title {
+      font-weight: 800;
+      color: var(--accent-dark);
+      overflow-wrap: anywhere;
+    }
+
+    .history-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     @media (max-width: 980px) {
       header { grid-template-columns: 1fr; }
       .actions { justify-content: flex-start; }
@@ -348,7 +499,8 @@
       .span-3,
       .span-4 { grid-column: span 2; }
       .metrics,
-      .batch-cards { grid-template-columns: 1fr; }
+      .batch-cards,
+      .summary-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 680px) {
@@ -380,6 +532,10 @@
       tr { break-inside: avoid; page-break-inside: avoid; }
       thead { display: table-header-group; }
       .table-scroll { overflow: visible; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .summary-card { break-inside: avoid; page-break-inside: avoid; }
+      .summary-list { font-size: 11px; }
+      .summary-cell { padding: 6px 5px; }
       .after-drop { display: none !important; }
       .batch-panel { display: grid !important; }
       .chart { height: 450px; }
@@ -391,11 +547,13 @@
   <main>
     <header>
       <div>
-        <h1>烘豆曲線紀錄</h1>
+        <h1 class="title-line"><img class="title-mark" src="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" alt="">烘豆曲線紀錄</h1>
         <p class="subtitle">同一支豆子可記錄 2-3 鍋不同烘法，疊加曲線並搭配杯測結果，判斷最適合的烘焙策略。</p>
       </div>
       <div class="actions">
-        <a class="ghost" href="./mobile.html" style="min-height:42px;border:1px solid #fed7aa;border-radius:8px;padding:0 14px;font:inherit;font-weight:700;display:inline-flex;align-items:center;text-decoration:none;color:var(--accent-dark);background:#fff7ed;">手機板</a>
+        <a class="ghost" href="./mobile.html" style="min-height:40px;border:1px solid #dcc7ad;border-radius:8px;padding:0 15px;font:inherit;font-weight:700;display:inline-flex;align-items:center;text-decoration:none;color:var(--accent-dark);background:#fbf4e9;">手機板</a>
+        <button class="secondary" id="save-record-button" type="button">保存本次紀錄</button>
+        <button class="ghost" id="history-toggle-button" type="button">查看前次紀錄</button>
         <button class="danger" id="clear-button" type="button">⌫ 清除數據</button>
         <button class="secondary" id="export-button" type="button">⇩ 匯出 Excel</button>
         <button class="primary" id="print-button" type="button">⎙ 列印 / PDF</button>
@@ -424,6 +582,16 @@
         </div>
       </section>
 
+      <section class="history-panel" id="history-panel" aria-labelledby="history-title">
+        <div class="section-head">
+          <h2 id="history-title">已保存紀錄</h2>
+          <div class="status" id="history-status">每台裝置與每個瀏覽器各自保存，不會覆蓋朋友的紀錄。</div>
+        </div>
+        <div class="content">
+          <div class="history-list" id="history-list"></div>
+        </div>
+      </section>
+
       <section aria-labelledby="chart-title">
         <div class="section-head">
           <h2 id="chart-title">多鍋烘焙曲線比較</h2>
@@ -432,6 +600,7 @@
         <div class="content">
           <svg class="chart" id="chart" viewBox="0 0 980 540" role="img" aria-label="多鍋烘焙曲線比較圖"></svg>
           <div class="batch-cards" id="batch-cards" style="margin-top: 14px;"></div>
+          <div class="summary-board" id="roast-summary" aria-live="polite"></div>
         </div>
       </section>
 
@@ -485,7 +654,8 @@
 
   <script>
     const STORAGE_KEY = "coffee-roast-compare-v2";
-    const colors = ["#a85513", "#14746f", "#2454a6"];
+    const HISTORY_KEY = "coffee-roast-history-v1";
+    const colors = ["#7b4a2c", "#2f7d62", "#2f5f9e"];
     const milestoneNames = ["入豆", "回溫點", "轉黃", "肉桂色", "一爆開始", "一爆結束", "下豆"];
     const beanFields = ["date", "beanItem", "process", "hypothesis"];
     const batchFields = ["name", "enabled", "strategy", "targetRoast", "greenWeight", "roastedWeight", "heatPlan", "damperPlan", "drumSpeed", "actualRoast", "roaster", "operator"];
@@ -644,6 +814,7 @@
     const batchTabs = document.querySelector("#batch-tabs");
     const batchPanels = document.querySelector("#batch-panels");
     const batchCards = document.querySelector("#batch-cards");
+    const roastSummary = document.querySelector("#roast-summary");
     const cuppingBody = document.querySelector("#cupping-body");
 
     function normalizeState(saved) {
@@ -674,6 +845,7 @@
       renderSingleBatchCharts();
       updateAutoRorFields();
       renderBatchCards();
+      renderRoastSummary();
       status.textContent = "已自動保存到此瀏覽器。";
     }
 
@@ -728,14 +900,141 @@
     }
 
     function getDevelopmentTime(batch) {
-      const firstCrack = batch.milestones.find((milestone) => milestone.name === "一爆開始");
-      const drop = batch.milestones.find((milestone) => milestone.name === "下豆");
-      return formatDuration(parseTimeToSeconds(drop?.time) - parseTimeToSeconds(firstCrack?.time));
+      return formatDuration(getDevelopmentSeconds(batch));
     }
 
     function getHighestTemp(batch) {
       const temps = batch.logs.map((log) => Number(log.temp)).filter((temp) => Number.isFinite(temp) && temp > 0);
       return temps.length ? `${Math.max(...temps).toFixed(1)}°C` : "--";
+    }
+
+    function getBatchLabel(batch, index) {
+      return batch.name || `第 ${index + 1} 鍋`;
+    }
+
+    function formatTempValue(temp) {
+      if (!Number.isFinite(temp) || temp <= 0) return "--";
+      return `${temp.toFixed(temp % 1 ? 1 : 0)}°C`;
+    }
+
+    function getStageSummary(batch, stageName) {
+      const point = getStagePoint(batch, stageName);
+      return point || { time: null, temp: null };
+    }
+
+    function getStageTempText(batch, stageName) {
+      return formatTempValue(getStageSummary(batch, stageName).temp);
+    }
+
+    function getStageTimeTempText(batch, stageName) {
+      const point = getStageSummary(batch, stageName);
+      const time = formatDuration(point.time);
+      const temp = formatTempValue(point.temp);
+      if (time === "--" && temp === "--") return "--";
+      if (time === "--") return temp;
+      if (temp === "--") return time;
+      return `${time} / ${temp}`;
+    }
+
+    function getDropSeconds(batch) {
+      return getMilestoneTime(batch, "下豆");
+    }
+
+    function getDevelopmentSeconds(batch) {
+      const dropTime = getMilestoneTime(batch, "下豆");
+      const firstCrackTime = getMilestoneTime(batch, "一爆開始");
+      if (!Number.isFinite(dropTime) || !Number.isFinite(firstCrackTime)) return NaN;
+      return dropTime - firstCrackTime;
+    }
+
+    function getDevelopmentRatio(batch) {
+      const developmentSeconds = getDevelopmentSeconds(batch);
+      const dropSeconds = getDropSeconds(batch);
+      if (!Number.isFinite(developmentSeconds) || !Number.isFinite(dropSeconds) || dropSeconds <= 0) return "";
+      return `${((developmentSeconds / dropSeconds) * 100).toFixed(1)}%`;
+    }
+
+    function getDevelopmentSummary(batch) {
+      const duration = formatDuration(getDevelopmentSeconds(batch));
+      const ratio = getDevelopmentRatio(batch);
+      return ratio ? `${duration}（${ratio}）` : duration;
+    }
+
+    function getDurationBetween(batch, startStage, endStage) {
+      const startTime = getMilestoneTime(batch, startStage);
+      const endTime = getMilestoneTime(batch, endStage);
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return NaN;
+      return endTime - startTime;
+    }
+
+    function getTemperatureDevelopmentText(batch) {
+      const firstCrackTemp = getStageSummary(batch, "一爆開始").temp;
+      const dropTemp = getStageSummary(batch, "下豆").temp;
+      if (!Number.isFinite(firstCrackTemp) || !Number.isFinite(dropTemp)) return "--";
+      const diff = dropTemp - firstCrackTemp;
+      const sign = diff >= 0 ? "+" : "";
+      return `${formatTempValue(firstCrackTemp)} → ${formatTempValue(dropTemp)}（${sign}${diff.toFixed(diff % 1 ? 1 : 0)}°C）`;
+    }
+
+    function compareBySeconds(batchIndex, getter, longText, middleText, shortText) {
+      const values = state.batches.map((batch) => getter(batch));
+      const current = values[batchIndex];
+      const finiteValues = values.filter(Number.isFinite);
+      if (!Number.isFinite(current) || finiteValues.length < 2) return "--";
+      const min = Math.min(...finiteValues);
+      const max = Math.max(...finiteValues);
+      if (min === max) return "相同";
+      if (current === max) return longText;
+      if (current === min) return shortText;
+      return middleText;
+    }
+
+    function getRorSamples(batch) {
+      const turningPointTime = getMilestoneTime(batch, "回溫點");
+      return batch.logs
+        .map((log) => ({
+          time: parseTimeToSeconds(log.time),
+          temp: Number(log.temp)
+        }))
+        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
+        .sort((a, b) => a.time - b.time)
+        .map((point, index, points) => {
+          const previous = points[index - 1];
+          if (!previous || point.time <= previous.time) return null;
+          if (Number.isFinite(turningPointTime) && point.time <= turningPointTime) return null;
+          return {
+            time: point.time,
+            value: ((point.temp - previous.temp) / (point.time - previous.time)) * 60
+          };
+        })
+        .filter((point) => point && Number.isFinite(point.value));
+    }
+
+    function formatRorValue(value) {
+      return Number.isFinite(value) ? `約 ${Math.round(value)}` : "--";
+    }
+
+    function getRorNearStage(batch, stageName) {
+      const stageTime = getMilestoneTime(batch, stageName);
+      if (!Number.isFinite(stageTime)) return "--";
+      const samples = getRorSamples(batch);
+      if (!samples.length) return "--";
+      const nearest = samples.reduce((best, sample) => {
+        const bestDistance = Math.abs(best.time - stageTime);
+        const sampleDistance = Math.abs(sample.time - stageTime);
+        return sampleDistance < bestDistance ? sample : best;
+      }, samples[0]);
+      return formatRorValue(nearest.value);
+    }
+
+    function getLowestRorInRange(batch, startStage, endStage) {
+      const startTime = getMilestoneTime(batch, startStage);
+      const endTime = getMilestoneTime(batch, endStage);
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) return "--";
+      const values = getRorSamples(batch)
+        .filter((sample) => sample.time >= startTime && sample.time <= endTime)
+        .map((sample) => sample.value);
+      return values.length ? formatRorValue(Math.min(...values)) : "--";
     }
 
     function getNextLogTime(batch) {
@@ -955,6 +1254,88 @@
       `).join("");
     }
 
+    function getKeySummaryRows() {
+      return [
+        { label: "入豆溫度", value: (batch) => getStageTempText(batch, "入豆") },
+        { label: "回溫點（時間 / 溫度）", value: (batch) => getStageTimeTempText(batch, "回溫點") },
+        { label: "轉黃時間 / 溫度", value: (batch) => getStageTimeTempText(batch, "轉黃") },
+        { label: "肉桂色時間 / 溫度", value: (batch) => getStageTimeTempText(batch, "肉桂色") },
+        { label: "一爆開始時間 / 溫度", value: (batch) => getStageTimeTempText(batch, "一爆開始") },
+        { label: "下豆時間 / 溫度", value: (batch) => getStageTimeTempText(batch, "下豆") },
+        { label: "發展時間（自一爆起）", value: (batch) => getDevelopmentSummary(batch) },
+        { label: "總烘焙時間", value: (batch) => formatDuration(getDropSeconds(batch)) },
+        { label: "烘焙損失率", value: (batch) => getLossRate(batch) ? `${getLossRate(batch)}%` : "--" }
+      ];
+    }
+
+    function getDurationSummaryRows() {
+      return [
+        { label: "回溫後到轉黃", value: (batch) => formatDuration(getDurationBetween(batch, "回溫點", "轉黃")) },
+        { label: "脫水段（轉黃→肉桂色）", value: (batch) => formatDuration(getDurationBetween(batch, "轉黃", "肉桂色")) },
+        { label: "梅納反應段（肉桂色→一爆）", value: (batch) => formatDuration(getDurationBetween(batch, "肉桂色", "一爆開始")) },
+        { label: "一爆發展段（一爆→下豆）", value: (batch) => formatDuration(getDevelopmentSeconds(batch)) },
+        { label: "總烘焙時間", value: (batch) => formatDuration(getDropSeconds(batch)) },
+        { label: "轉黃點 RoR（回溫後）", value: (batch) => getRorNearStage(batch, "轉黃") },
+        { label: "一爆前最低 RoR", value: (batch) => getLowestRorInRange(batch, "肉桂色", "一爆開始") },
+        { label: "下豆前最低 RoR", value: (batch) => getLowestRorInRange(batch, "一爆開始", "下豆") }
+      ];
+    }
+
+    function getDevelopmentCompareRows() {
+      return [
+        { label: "下豆溫度", value: (batch) => getStageTempText(batch, "下豆") },
+        { label: "發展時間", value: (batch) => formatDuration(getDevelopmentSeconds(batch)) },
+        { label: "發展時間占比", value: (batch) => getDevelopmentRatio(batch) || "--" },
+        { label: "發展敘述", value: (_batch, index) => compareBySeconds(index, getDevelopmentSeconds, "時間最長", "居中", "時間最短") },
+        { label: "發展溫度變化", value: (batch) => getTemperatureDevelopmentText(batch) },
+        { label: "損失率", value: (batch) => getLossRate(batch) ? `${getLossRate(batch)}%` : "--" },
+        { label: "整體時間長短", value: (_batch, index) => compareBySeconds(index, getDropSeconds, "最長", "居中", "最短") }
+      ];
+    }
+
+    function buildSummaryRows(definitions) {
+      return definitions.map((definition) => [
+        definition.label,
+        ...state.batches.map((batch, index) => definition.value(batch, index))
+      ]);
+    }
+
+    function renderSummaryTable(title, definitions) {
+      const headers = state.batches.map((batch, index) => `
+        <div class="summary-cell" style="color:${colors[index]}">${escapeHtml(getBatchLabel(batch, index))}</div>
+      `).join("");
+      const rows = buildSummaryRows(definitions).map((row) => `
+        <div class="summary-row">
+          <div class="summary-cell">${escapeHtml(row[0])}</div>
+          ${row.slice(1).map((value) => `<div class="summary-cell">${escapeHtml(value)}</div>`).join("")}
+        </div>
+      `).join("");
+      return `
+        <div class="summary-card">
+          <h4>${escapeHtml(title)}</h4>
+          <div class="summary-table-wrap">
+            <div class="summary-list" role="table" aria-label="${escapeHtml(title)}">
+              <div class="summary-row summary-head" role="row">
+                <div class="summary-cell" role="columnheader">項目</div>${headers}
+              </div>
+              ${rows}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRoastSummary() {
+      roastSummary.innerHTML = `
+        <h3>每次烘焙自動總結</h3>
+        <div class="summary-grid">
+          ${renderSummaryTable("關鍵時間點與數據對比", getKeySummaryRows())}
+          ${renderSummaryTable("各階段時間長度與 RoR", getDurationSummaryRows())}
+          ${renderSummaryTable("下豆與發展表現對比", getDevelopmentCompareRows())}
+        </div>
+      `;
+    }
+
     function renderCuppingTable() {
       cuppingBody.innerHTML = state.batches.map((batch, index) => `
         <tr>
@@ -1039,26 +1420,46 @@
         }))
         .filter((stage) => stage.entries.length);
 
-      return stages.map((stage, stageIndex) => {
+      const positionedStages = stages.map((stage) => {
         const avgTime = stage.entries.reduce((sum, entry) => sum + entry.point.time, 0) / stage.entries.length;
         const x = Math.max(left + 44, Math.min(rightLimit - 44, xScale(avgTime)));
-        const titleY = top - (compact ? 62 : 76) + (stageIndex % 2) * (compact ? 0 : 8);
+        return { ...stage, x, labelX: x };
+      });
+      const minGap = compact ? 92 : 118;
+      for (let index = 1; index < positionedStages.length; index += 1) {
+        positionedStages[index].labelX = Math.max(positionedStages[index].labelX, positionedStages[index - 1].labelX + minGap);
+      }
+      for (let index = positionedStages.length - 2; index >= 0; index -= 1) {
+        positionedStages[index].labelX = Math.min(positionedStages[index].labelX, positionedStages[index + 1].labelX - minGap);
+      }
+
+      return positionedStages.map((stage, stageIndex) => {
+        const x = Math.max(left + 44, Math.min(rightLimit - 44, stage.x));
+        const labelX = Math.max(left + 44, Math.min(rightLimit - 44, stage.labelX));
+        const titleY = top - (compact ? 62 : 78) + (stageIndex % 2) * (compact ? 38 : 46);
         const detailStartY = titleY + 17;
         const rows = stage.entries.map((entry, rowIndex) => {
           const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
-          return `<text x="${x.toFixed(1)}" y="${(detailStartY + rowIndex * (compact ? 14 : 16)).toFixed(1)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 12 : 14}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+          return `<text x="${labelX.toFixed(1)}" y="${(detailStartY + rowIndex * (compact ? 13 : 14)).toFixed(1)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 11 : 13}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
         }).join("");
 
         return `
           <line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-width="1" stroke-dasharray="4 4"></line>
-          <text x="${x.toFixed(1)}" y="${titleY.toFixed(1)}" text-anchor="middle" fill="#111827" font-size="${compact ? 13 : 15}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>
+          ${Math.abs(labelX - x) > 1 ? `<line x1="${x.toFixed(1)}" y1="${(top - 5).toFixed(1)}" x2="${labelX.toFixed(1)}" y2="${(titleY + 4).toFixed(1)}" stroke="#c7b8a5" stroke-width="1"></line>` : ""}
+          <text x="${labelX.toFixed(1)}" y="${titleY.toFixed(1)}" text-anchor="middle" fill="#111827" font-size="${compact ? 12 : 14}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>
           ${rows}
         `;
       }).join("");
     }
 
     function renderNoteAnnotations(series, xScale, yScale, top, plotBottom, compact = false) {
-      return series.flatMap(({ batch, index }) => batch.logs
+      const fontSize = compact ? 10 : 12;
+      const lineHeight = compact ? 14 : 17;
+      const labelTop = plotBottom + (compact ? 20 : 22);
+      const minX = 78;
+      const maxX = 900;
+      const lanes = [];
+      const items = series.flatMap(({ batch, index }) => batch.logs
         .map((log) => ({
           time: parseTimeToSeconds(log.time),
           temp: Number(log.temp),
@@ -1066,14 +1467,20 @@
           index
         }))
         .filter((item) => item.note && Number.isFinite(item.time) && Number.isFinite(item.temp) && item.temp > 0 && !isAfterDrop(batch, { time: formatDuration(item.time) }))
-      ).map((item, noteIndex) => {
+      ).sort((a, b) => a.time - b.time || a.index - b.index);
+
+      return items.map((item) => {
         const x = xScale(item.time);
-        const y = yScale(item.temp);
-        const laneHeight = compact ? 13 : 15;
-        const labelY = plotBottom + (compact ? 20 : 24) + (noteIndex % 3) * laneHeight;
+        const estimatedWidth = Math.max(34, Math.min(140, item.note.length * fontSize * 0.72));
+        const preferredX = Math.max(minX, Math.min(x + 8, maxX - estimatedWidth));
+        const laneIndex = lanes.findIndex((lastRight) => preferredX >= lastRight + 12);
+        const lane = laneIndex >= 0 ? laneIndex : lanes.length;
+        const labelX = laneIndex >= 0 || !lanes.length ? preferredX : Math.max(minX, Math.min(Math.min(...lanes) + 12, maxX - estimatedWidth));
+        lanes[lane] = labelX + estimatedWidth;
+        const labelY = labelTop + lane * lineHeight;
         return `
-          <line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(plotBottom + 8).toFixed(1)}" stroke="${colors[item.index]}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"></line>
-          <text x="${(x + 4).toFixed(1)}" y="${labelY.toFixed(1)}" fill="${colors[item.index]}" font-size="${compact ? 10 : 12}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(item.note)}</text>
+          <line x1="${x.toFixed(1)}" y1="${plotBottom.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(plotBottom + 8).toFixed(1)}" stroke="${colors[item.index]}" stroke-width="1.5" opacity="0.75"></line>
+          <text x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" fill="${colors[item.index]}" font-size="${fontSize}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(item.note)}</text>
         `;
       }).join("");
     }
@@ -1087,7 +1494,7 @@
       const height = 540;
       const left = 68;
       const right = 34;
-      const top = 132;
+      const top = 178;
       const bottom = 100;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
@@ -1147,6 +1554,13 @@
         <text x="${width - 8}" y="${top + 4}" text-anchor="end" fill="#475467" font-size="14">RoR</text>
       `;
 
+      series.forEach(({ batch, index }) => {
+        chart.innerHTML += `
+          <circle cx="${left + index * 150}" cy="56" r="5" fill="${colors[index]}"></circle>
+          <text x="${left + 12 + index * 150}" y="60" fill="#344054" font-size="13">${escapeHtml(batch.name)}</text>
+        `;
+      });
+
       chart.innerHTML += renderStageAnnotations(series, xScale, top, plotHeight, left, width - right);
 
       series.forEach(({ batch, index, points }) => {
@@ -1159,8 +1573,6 @@
           const y = yScale(point.temp);
           chart.innerHTML += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6.5" fill="${colors[index]}" stroke="#fff" stroke-width="2.2"></circle>`;
         });
-        const endPoint = points[points.length - 1];
-        chart.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10).toFixed(1)}" y="${(yScale(endPoint.temp) + (index - 1) * 18).toFixed(1)}" fill="${colors[index]}" font-size="13" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name)}</text>`;
         const rorPoints = getRorPoints(batch);
         if (rorPoints.length >= 2) {
           const rorPath = rorPoints
@@ -1168,13 +1580,9 @@
             .join(" ");
           chart.innerHTML += `<path d="${rorPath}" fill="none" stroke="${colors[index]}" stroke-width="2.5" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"></path>`;
         }
-        chart.innerHTML += `
-          <circle cx="${left + index * 150}" cy="${height - 16}" r="5" fill="${colors[index]}"></circle>
-          <text x="${left + 12 + index * 150}" y="${height - 12}" fill="#344054" font-size="13">${escapeHtml(batch.name)}</text>
-        `;
       });
       chart.innerHTML += renderNoteAnnotations(series, xScale, yScale, top, top + plotHeight);
-      chart.innerHTML += `<text x="${width - right - 8}" y="${height - 12}" text-anchor="end" fill="#475467" font-size="12">實線=豆溫　虛線=RoR</text>`;
+      chart.innerHTML += `<text x="${width - right - 8}" y="56" text-anchor="end" fill="#475467" font-size="12">實線=豆溫　虛線=RoR</text>`;
     }
 
     function renderSingleBatchCharts() {
@@ -1195,7 +1603,7 @@
 
         svg.innerHTML = `
           <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
-          <text x="${left}" y="26" fill="#344054" font-size="18" font-weight="700">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)} 單鍋曲線</text>
+          <text x="${left}" y="26" fill="#344054" font-size="18" font-weight="700">單鍋曲線</text>
           <text x="${width - right}" y="26" text-anchor="end" fill="#66737f" font-size="13">豆溫 °C / 時間</text>
         `;
 
@@ -1261,8 +1669,6 @@
             <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6.5" fill="${color}" stroke="#fff" stroke-width="2.2"></circle>
           `;
         });
-        const endPoint = points[points.length - 1];
-        svg.innerHTML += `<text x="${Math.min(width - right - 8, xScale(endPoint.time) + 10).toFixed(1)}" y="${(yScale(endPoint.temp) - 12).toFixed(1)}" fill="${color}" font-size="13" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</text>`;
         if (rorPoints.length >= 2) {
           const rorPath = rorPoints
             .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${rorYScale(point.ror).toFixed(1)}`)
@@ -1281,8 +1687,87 @@
       renderBatchPanels();
       renderCuppingTable();
       renderBatchCards();
+      renderRoastSummary();
       renderChart();
       renderSingleBatchCharts();
+      renderHistoryList();
+    }
+
+    function getHistoryRecords() {
+      try {
+        const records = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        return Array.isArray(records) ? records : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setHistoryRecords(records) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
+    }
+
+    function getRecordTitle(recordState = state) {
+      const date = recordState.bean?.date || today();
+      const bean = recordState.bean?.beanItem || "未命名豆子";
+      return `${date} ${bean}`;
+    }
+
+    function handleSaveRecord() {
+      const records = getHistoryRecords();
+      const now = new Date();
+      const record = {
+        id: `${now.getTime()}`,
+        title: getRecordTitle(),
+        savedAt: now.toISOString(),
+        state: JSON.parse(JSON.stringify(state))
+      };
+      records.unshift(record);
+      setHistoryRecords(records.slice(0, 30));
+      renderHistoryList();
+      status.textContent = "已保存本次紀錄，可從「查看前次紀錄」載入。";
+    }
+
+    function renderHistoryList() {
+      const list = document.querySelector("#history-list");
+      if (!list) return;
+      const records = getHistoryRecords();
+      if (!records.length) {
+        list.innerHTML = `<div class="history-item"><div><div class="history-title">尚無已保存紀錄</div><div class="history-meta">完成一次烘焙後按「保存本次紀錄」，下次就能從這裡載入。</div></div></div>`;
+        return;
+      }
+      list.innerHTML = records.map((record) => {
+        const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-TW", { hour12: false }) : "";
+        return `
+          <div class="history-item">
+            <div>
+              <div class="history-title">${escapeHtml(record.title || getRecordTitle(record.state))}</div>
+              <div class="history-meta">保存時間：${escapeHtml(savedAt)}</div>
+            </div>
+            <button class="secondary" type="button" data-load-record="${escapeHtml(record.id)}">載入</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function handleToggleHistory() {
+      const panel = document.querySelector("#history-panel");
+      if (!panel) return;
+      panel.classList.toggle("active");
+      renderHistoryList();
+      if (panel.classList.contains("active")) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function handleLoadRecord(id) {
+      const record = getHistoryRecords().find((item) => item.id === id);
+      if (!record) return;
+      if (!window.confirm("載入前次紀錄會取代目前畫面上的暫存內容，確定要載入嗎？")) return;
+      state = record.state;
+      state.activeBatch = 0;
+      renderAll();
+      save();
+      status.textContent = `已載入：${record.title || getRecordTitle(record.state)}`;
     }
 
     function handleClearData() {
@@ -1301,6 +1786,9 @@
         ["處理法", state.bean.process],
         ["假設條件", state.bean.hypothesis]
       ]);
+      rows += xlsSection("關鍵時間點與數據對比", ["項目", ...state.batches.map(getBatchLabel)], buildSummaryRows(getKeySummaryRows()));
+      rows += xlsSection("各階段時間長度與 RoR", ["項目", ...state.batches.map(getBatchLabel)], buildSummaryRows(getDurationSummaryRows()));
+      rows += xlsSection("下豆與發展表現對比", ["項目", ...state.batches.map(getBatchLabel)], buildSummaryRows(getDevelopmentCompareRows()));
 
       state.batches.forEach((batch, index) => {
         rows += xlsSection(`${batch.name || `第 ${index + 1} 鍋`} 烘法設定`, ["項目", "內容"], [
@@ -1438,9 +1926,17 @@
         renderBatchPanels();
         renderSingleBatchCharts();
         save();
+        return;
+      }
+
+      const loadRecord = event.target.closest("[data-load-record]");
+      if (loadRecord) {
+        handleLoadRecord(loadRecord.dataset.loadRecord);
       }
     });
 
+    document.querySelector("#save-record-button").addEventListener("click", handleSaveRecord);
+    document.querySelector("#history-toggle-button").addEventListener("click", handleToggleHistory);
     document.querySelector("#clear-button").addEventListener("click", handleClearData);
     document.querySelector("#export-button").addEventListener("click", handleExportCSV);
     document.querySelector("#print-button").addEventListener("click", () => window.print());
