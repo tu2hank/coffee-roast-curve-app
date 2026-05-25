@@ -554,6 +554,7 @@
 
   <script>
     const STORAGE_KEY = "coffee-roast-compare-v2";
+    const STATE_VERSION = 3;
     const HISTORY_KEY = "coffee-roast-history-v1";
     const colors = ["#7b4a2c", "#2f7d62", "#2f5f9e"];
     const milestoneNames = ["入豆", "回溫點", "轉黃", "肉桂色", "一爆開始", "一爆結束", "下豆"];
@@ -596,8 +597,9 @@
       return String(Math.round(clamped * 10) / 10);
     }
     function normalizeTimeInRange(value) {
-      const text = String(value ?? "").trim();
+      let text = String(value ?? "").trim();
       if (!text) return "";
+      if (/^\d{4}$/.test(text)) text = `${text.slice(0, 2)}:${text.slice(2)}`;
       const seconds = parseTimeToSeconds(text);
       if (!Number.isFinite(seconds)) return text;
       return formatDuration(Math.max(0, Math.min(MAX_CHART_TIME, seconds)));
@@ -655,7 +657,7 @@
     function createBatch(index) {
       return {
         name: `第 ${index + 1} 鍋`,
-        enabled: index < 2,
+        enabled: true,
         strategy: "",
         targetRoast: "",
         greenWeight: "",
@@ -674,6 +676,7 @@
     function createState() {
       return {
         bean: { date: today(), beanItem: "", process: "", hypothesis: "" },
+        appVersion: STATE_VERSION,
         batches: [createBatch(0), createBatch(1), createBatch(2)],
         activeBatch: 0,
         decision: { winner: "", conclusion: "" }
@@ -685,12 +688,15 @@
     function normalizeState(saved) {
       const fresh = createState();
       if (!saved || typeof saved !== "object") return fresh;
+      const shouldResetEnabled = saved.appVersion !== STATE_VERSION;
       return {
         bean: Object.fromEntries(beanFields.map((field) => [field, saved.bean?.[field] ?? fresh.bean[field]])),
+        appVersion: STATE_VERSION,
         batches: fresh.batches.map((batch, index) => {
           const normalized = {
             ...batch,
             ...(saved.batches?.[index] || {}),
+            enabled: shouldResetEnabled ? true : saved.batches?.[index]?.enabled ?? batch.enabled,
             strategy: normalizeStrategy(saved.batches?.[index]?.strategy || batch.strategy),
             milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
             logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
@@ -1097,7 +1103,7 @@
                   <button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button>
                 </div>
                 <div class="mini-grid">
-                  <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="輸入 4 碼，例如 0430" inputmode="numeric" maxlength="5"></label>
                   <label>溫度<input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                   <label>RoR<input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(autoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></label>
                   <label>重要階段
@@ -1106,7 +1112,7 @@
                       ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
                     </select>
                   </label>
-                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="輸入 4 碼，例如 0430" inputmode="numeric" maxlength="5"></label>
                   <label>精確溫度<input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                   <label>備註<input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></label>
                 </div>
@@ -1122,7 +1128,7 @@
               <div class="milestone-card">
                 <div class="log-head"><span>${escapeHtml(milestone.name)}</span></div>
                 <div class="mini-grid">
-                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="輸入 4 碼，例如 0430" inputmode="numeric" maxlength="5"></label>
                   <label>精確溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                   <label>溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                 </div>
@@ -1398,16 +1404,12 @@
       if (field?.startsWith("decision.")) state.decision[field.split(".")[1]] = event.target.value;
       if (event.target.dataset.batchField) state.batches[Number(event.target.dataset.batch)][event.target.dataset.batchField] = event.target.value;
       if (event.target.dataset.milestone) {
-        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
-        event.target.value = normalized;
-        state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = normalized;
+        state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = event.target.value;
       }
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
-        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
-        event.target.value = normalized;
-        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = normalized;
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
         syncLogStageTime(state.batches[batchIndex], logIndex);
       }
       if (event.target.dataset.cupping) state.batches[Number(event.target.dataset.cupping)].cupping[event.target.dataset.field] = event.target.value;
@@ -1416,6 +1418,15 @@
     });
 
     document.addEventListener("change", (event) => {
+      if (event.target.dataset.milestone) {
+        const batchIndex = Number(event.target.dataset.milestone);
+        const milestoneIndex = Number(event.target.dataset.index);
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].milestones[milestoneIndex][event.target.dataset.field] = normalized;
+        save();
+        return;
+      }
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
