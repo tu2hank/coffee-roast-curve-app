@@ -1,0 +1,1464 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6f4328">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="烘豆曲線">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>烘豆曲線紀錄手機板</title>
+  <link rel="manifest" href="./manifest.json?v=share-entry-v6">
+  <link rel="icon" href="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" type="image/png">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=bean-gen-1">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #30251d;
+      --muted: #7b7068;
+      --line: #ded2c3;
+      --paper: #f4efe7;
+      --panel: #fffaf2;
+      --accent: #6f4328;
+      --accent-dark: #4d2d1b;
+      --green: #65745a;
+      --red: #9b3f32;
+      --blue: #4f6670;
+      --shadow: 0 10px 28px rgba(65, 43, 28, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      width: 100%;
+      padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 250, 242, 0.96);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .title-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      flex: 0 0 auto;
+    }
+
+    .title-line {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(calc(100% - 20px), 720px);
+      margin: 0 auto;
+      padding: 12px 0 32px;
+      overflow-x: hidden;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      max-width: 100%;
+    }
+
+    button,
+    .button-link {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      min-width: 0;
+      max-width: 100%;
+      white-space: normal;
+    }
+
+    .primary { background: var(--accent); color: #fff; }
+    .secondary { background: #f2f5ee; color: var(--green); border-color: #cad4c0; }
+    .ghost { background: #fbf4e9; color: var(--accent-dark); border-color: #dcc7ad; }
+    .danger { background: #faf0ec; color: var(--red); border-color: #e2b8ad; }
+
+    .history-panel {
+      display: none;
+    }
+
+    .history-panel.active {
+      display: block;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+      padding: 12px;
+    }
+
+    .history-title {
+      font-weight: 800;
+      color: var(--accent-dark);
+      overflow-wrap: anywhere;
+    }
+
+    .history-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    section,
+    .card {
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .content {
+      padding: 14px;
+    }
+
+    .field-grid,
+    .mini-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: #4a3d34;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #cdbfaf;
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+      font-size: 15px;
+      color: var(--ink);
+      background: #fffdf8;
+    }
+
+    input,
+    select { min-height: 42px; }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .chart {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      height: 390px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+    }
+
+    .batch-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px 14px 0;
+    }
+
+    .tab {
+      background: #fbf6ee;
+      color: #65594f;
+      border-color: var(--line);
+      padding: 0 8px;
+    }
+
+    .tab.active {
+      background: #f7efe4;
+      color: var(--accent-dark);
+      border-color: var(--accent);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fffdf8;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+      color: var(--accent-dark);
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .roast-summary {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .roast-summary h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+    }
+
+    .summary-card h4 {
+      margin: 0;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #f7efe4;
+      color: var(--accent-dark);
+      font-size: 15px;
+    }
+
+    .summary-list {
+      display: grid;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 1.05fr repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .summary-row:last-child {
+      border-bottom: 0;
+    }
+
+    .summary-cell {
+      text-align: center;
+      padding: 8px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      min-width: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .summary-cell:first-child {
+      text-align: left;
+      font-weight: 700;
+      background: #fbf6ee;
+      border-left: 0;
+    }
+
+    .summary-head .summary-cell {
+      color: #5d5148;
+      background: #f6efe6;
+      font-weight: 800;
+    }
+
+    .summary-table-wrap {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .log-list,
+    .milestone-list,
+    .cupping-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .log-card,
+    .milestone-card,
+    .cupping-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf8;
+      padding: 10px;
+    }
+
+    .log-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .icon-button {
+      width: 36px;
+      min-height: 36px;
+      padding: 0;
+      background: #faf0ec;
+      color: var(--red);
+      border-color: #fecdd3;
+    }
+
+    .status {
+      color: var(--green);
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 100%;
+    }
+
+    .chart-toggles {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      max-width: 100%;
+      color: #4a3d34;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .checkline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkline input {
+      width: 18px;
+      min-height: 18px;
+      height: 18px;
+    }
+
+    @media (min-width: 560px) {
+      .field-grid { grid-template-columns: 1fr 1fr; }
+      .wide { grid-column: span 2; }
+      .toolbar { grid-template-columns: repeat(4, 1fr); }
+      .chart { height: 430px; }
+    }
+
+    @media (max-width: 430px) {
+      .section-head .status {
+        width: 100%;
+      }
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      .toolbar,
+      .tabs,
+      .icon-button,
+      button { display: none !important; }
+      body { background: #fff; }
+      section,
+      .card,
+      .log-card,
+      .milestone-card { break-inside: avoid; page-break-inside: avoid; }
+      .after-drop { display: none !important; }
+      .summary-card { break-inside: avoid; page-break-inside: avoid; }
+      .summary-list { font-size: 11px; }
+      .summary-cell { padding: 6px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 class="title-line"><img class="title-mark" src="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" alt="">烘豆曲線紀錄手機板</h1>
+    <p class="subtitle">手機輸入優先：單鍋分頁、卡片式紀錄、疊圖與單鍋曲線都保留。</p>
+    <div class="toolbar">
+      <a class="button-link ghost" href="./index.html?v=share-entry-v6">桌機版</a>
+      <button class="secondary" id="save-record-button" type="button">保存本次</button>
+      <button class="ghost" id="history-toggle-button" type="button">查看前次</button>
+      <button class="secondary" id="export-button" type="button">匯出 Excel</button>
+      <button class="primary" id="print-button" type="button">列印</button>
+      <button class="danger" id="clear-button" type="button">清除</button>
+    </div>
+  </header>
+
+  <main class="stack">
+    <section>
+      <div class="section-head">
+        <h2>豆子與目標</h2>
+        <div class="status" id="status">已自動保存</div>
+      </div>
+      <div class="content field-grid">
+        <label>日期
+          <input data-field="bean.date" type="date">
+        </label>
+        <label>生豆品項
+          <input data-field="bean.beanItem" type="text" placeholder="例如：耶加雪菲 水洗">
+        </label>
+        <label>處理法
+          <input data-field="bean.process" type="text">
+        </label>
+        <label class="wide">假設條件
+          <textarea data-field="bean.hypothesis"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="history-panel" id="history-panel">
+      <div class="section-head">
+        <h2>已保存紀錄</h2>
+        <div class="status" id="history-status">每台裝置與每個瀏覽器各自保存，不會覆蓋朋友的紀錄。</div>
+      </div>
+      <div class="content">
+        <div class="history-list" id="history-list"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>三鍋疊圖</h2>
+      </div>
+      <div class="content">
+        <svg class="chart" id="chart" viewBox="0 0 900 500" role="img" aria-label="三鍋疊加曲線"></svg>
+        <div class="chart-toggles" id="chart-toggles"></div>
+        <div class="roast-summary" id="roast-summary" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>單鍋紀錄</h2>
+      </div>
+      <div class="batch-tabs" id="batch-tabs"></div>
+      <div class="content stack" id="batch-panel"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>杯測與結論</h2>
+      </div>
+      <div class="content stack">
+        <div class="cupping-list" id="cupping-list"></div>
+        <div class="field-grid">
+          <label>最適合烘法
+            <select data-field="decision.winner">
+              <option value="">尚未決定</option>
+              <option value="0">第 1 鍋</option>
+              <option value="1">第 2 鍋</option>
+              <option value="2">第 3 鍋</option>
+            </select>
+          </label>
+          <label class="wide">結論與下次調整
+            <textarea data-field="decision.conclusion" placeholder="哪一鍋最適合，下一次要怎麼調整。"></textarea>
+          </label>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "coffee-roast-compare-v2";
+    const HISTORY_KEY = "coffee-roast-history-v1";
+    const colors = ["#7b4a2c", "#2f7d62", "#2f5f9e"];
+    const milestoneNames = ["入豆", "回溫點", "轉黃", "肉桂色", "一爆開始", "一爆結束", "下豆"];
+    const beanFields = ["date", "beanItem", "process", "hypothesis"];
+    const cuppingScoreFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish"];
+    const cuppingFields = [...cuppingScoreFields, "score", "judgement"];
+    const MAX_CHART_TIME = 13 * 60;
+
+    const status = document.querySelector("#status");
+    const chart = document.querySelector("#chart");
+    const batchTabs = document.querySelector("#batch-tabs");
+    const batchPanel = document.querySelector("#batch-panel");
+    const roastSummary = document.querySelector("#roast-summary");
+    const cuppingList = document.querySelector("#cupping-list");
+
+    function today() { return new Date().toLocaleDateString("en-CA"); }
+    function formatDuration(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return "--";
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+    function parseTimeToSeconds(value) {
+      const text = String(value || "").trim();
+      if (!text) return null;
+      const parts = text.split(":").map(Number);
+      if (parts.some(Number.isNaN)) return null;
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      return null;
+    }
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function csvValue(value) {
+      const text = String(value ?? "");
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+    function xlsCell(value) {
+      return `<td>${escapeHtml(value ?? "")}</td>`;
+    }
+    function xlsHeader(values) {
+      return `<tr>${values.map((value) => `<th>${escapeHtml(value)}</th>`).join("")}</tr>`;
+    }
+    function xlsSection(title, columns, rows, batchIndex = null) {
+      const batchClass = Number.isInteger(batchIndex) ? ` batch-${batchIndex}` : "";
+      return `<tr><td class="section${batchClass}" colspan="${Math.max(columns.length, 2)}">${escapeHtml(title)}</td></tr>${xlsHeader(columns)}${rows.map((row) => `<tr>${row.map((value) => xlsCell(value)).join("")}</tr>`).join("")}<tr class="gap"><td colspan="${Math.max(columns.length, 2)}"></td></tr>`;
+    }
+    function downloadWorkbook(filename, bodyRows) {
+      const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+        body{font-family:"Microsoft JhengHei",Arial,sans-serif} table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #d9c7b8;padding:6px 8px;font-size:12px;vertical-align:middle;text-align:center;mso-number-format:"\\@"}
+        th{background:#f3e6d8;font-weight:700;text-align:center}.title{background:#8a4b20;color:#fff;font-size:18px;font-weight:800;text-align:center}.section{background:#d97706;color:#fff;font-weight:800;font-size:14px}.batch-0{background:#dbeafe;color:#1e3a8a}.batch-1{background:#dcfce7;color:#14532d}.batch-2{background:#fee2e2;color:#991b1b}.gap td,tr.gap td{border:0;height:12px}
+      </style></head><body><table><colgroup>${Array.from({ length: 10 }, () => "<col style='width:120px'>").join("")}</colgroup>${bodyRows}</table></body></html>`;
+      const blob = new Blob(["\uFEFF", html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+    function scoreOptions(value) {
+      return `<option value=""></option>${Array.from({ length: 10 }, (_, index) => {
+        const score = String(index + 1);
+        return `<option value="${score}" ${String(value || "") === score ? "selected" : ""}>${score}</option>`;
+      }).join("")}`;
+    }
+    function initialLogs() {
+      return Array.from({ length: 27 }, (_, index) => ({ time: formatDuration(index * 30), temp: "", ror: "", stage: index === 0 ? "入豆" : "", stageTime: index === 0 ? "00:00" : "", exactTemp: "", note: "" }));
+    }
+    function initialMilestones() {
+      return milestoneNames.map((name) => ({ name, time: name === "入豆" ? "00:00" : "", exactTemp: "", temp: "", note: "" }));
+    }
+    function createBatch(index) {
+      return {
+        name: `第 ${index + 1} 鍋`,
+        enabled: index < 2,
+        strategy: "",
+        targetRoast: "",
+        greenWeight: "",
+        roastedWeight: "",
+        heatPlan: "",
+        damperPlan: "",
+        drumSpeed: "",
+        actualRoast: "",
+        roaster: "",
+        operator: "",
+        milestones: initialMilestones(),
+        logs: initialLogs(),
+        cupping: Object.fromEntries(cuppingFields.map((field) => [field, ""]))
+      };
+    }
+    function createState() {
+      return {
+        bean: { date: today(), beanItem: "", process: "", hypothesis: "" },
+        batches: [createBatch(0), createBatch(1), createBatch(2)],
+        activeBatch: 0,
+        decision: { winner: "", conclusion: "" }
+      };
+    }
+
+    let state = createState();
+
+    function normalizeState(saved) {
+      const fresh = createState();
+      if (!saved || typeof saved !== "object") return fresh;
+      return {
+        bean: Object.fromEntries(beanFields.map((field) => [field, saved.bean?.[field] ?? fresh.bean[field]])),
+        batches: fresh.batches.map((batch, index) => {
+          const normalized = {
+            ...batch,
+            ...(saved.batches?.[index] || {}),
+            strategy: normalizeStrategy(saved.batches?.[index]?.strategy || batch.strategy),
+            milestones: normalizeMilestones(saved.batches?.[index]?.milestones, batch.milestones),
+            logs: normalizeLogs(saved.batches?.[index]?.logs, batch.logs),
+            cupping: { ...batch.cupping, ...(saved.batches?.[index]?.cupping || {}) }
+          };
+          syncMilestonesFromLogs(normalized);
+          return normalized;
+        }),
+        activeBatch: Number.isInteger(saved.activeBatch) ? Math.max(0, Math.min(2, saved.activeBatch)) : fresh.activeBatch,
+        decision: { ...fresh.decision, ...(saved.decision || {}) }
+      };
+    }
+    function load() {
+      try { state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")); }
+      catch { state = createState(); }
+    }
+    function normalizeMilestones(savedMilestones, freshMilestones) {
+      if (!Array.isArray(savedMilestones)) return freshMilestones;
+      return freshMilestones.map((fresh) => {
+        const saved = savedMilestones.find((item) => item?.name === fresh.name);
+        const merged = { ...fresh, ...(saved || {}) };
+        if (merged.name === "入豆" && !merged.time) merged.time = "00:00";
+        return merged;
+      });
+    }
+    function normalizeStrategy(value) {
+      return ["基準烘法", "調整烘法", "備用烘法"].includes(value) ? "" : value;
+    }
+    function normalizeLogs(savedLogs, freshLogs) {
+      if (!Array.isArray(savedLogs)) return freshLogs;
+      const logs = savedLogs.filter((log) => {
+        const time = parseTimeToSeconds(log?.time);
+        return Number.isFinite(time) && time <= MAX_CHART_TIME;
+      }).map((log) => {
+        const stage = log.stage || (milestoneNames.includes(log.note) ? log.note : "");
+        return {
+          time: log.time || "",
+          temp: log.temp || "",
+          ror: log.ror || "",
+          stage,
+          stageTime: log.stageTime || (stage ? log.time || "" : ""),
+          exactTemp: log.exactTemp || log.exactTime || "",
+          note: stage && log.note === stage ? "" : log.note || ""
+        };
+      });
+      return logs.length ? logs : freshLogs;
+    }
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderCharts();
+      renderRoastSummary();
+      updateRorFields();
+      renderCupping();
+      status.textContent = "已自動保存";
+    }
+    function lossRate(batch) {
+      const green = Number(batch.greenWeight);
+      const roasted = Number(batch.roastedWeight);
+      if (!green || !roasted || roasted > green) return "";
+      return (((green - roasted) / green) * 100).toFixed(1);
+    }
+    function developmentTime(batch) {
+      return formatDuration(developmentSeconds(batch));
+    }
+    function highestTemp(batch) {
+      const temps = batch.logs.map((log) => Number(log.temp)).filter((temp) => Number.isFinite(temp) && temp > 0);
+      return temps.length ? `${Math.max(...temps).toFixed(1)}°C` : "--";
+    }
+    function batchLabel(batch, index) {
+      return batch.name || `第 ${index + 1} 鍋`;
+    }
+    function formatTempValue(temp) {
+      if (!Number.isFinite(temp) || temp <= 0) return "--";
+      return `${temp.toFixed(temp % 1 ? 1 : 0)}°C`;
+    }
+    function stageSummary(batch, stageName) {
+      return stagePoint(batch, stageName) || { time: null, temp: null };
+    }
+    function stageTempText(batch, stageName) {
+      return formatTempValue(stageSummary(batch, stageName).temp);
+    }
+    function stageTimeTempText(batch, stageName) {
+      const point = stageSummary(batch, stageName);
+      const time = formatDuration(point.time);
+      const temp = formatTempValue(point.temp);
+      if (time === "--" && temp === "--") return "--";
+      if (time === "--") return temp;
+      if (temp === "--") return time;
+      return `${time} / ${temp}`;
+    }
+    function dropSeconds(batch) {
+      return milestoneTime(batch, "下豆");
+    }
+    function developmentSeconds(batch) {
+      const dropTime = milestoneTime(batch, "下豆");
+      const firstCrackTime = milestoneTime(batch, "一爆開始");
+      if (!Number.isFinite(dropTime) || !Number.isFinite(firstCrackTime)) return NaN;
+      return dropTime - firstCrackTime;
+    }
+    function developmentRatio(batch) {
+      const seconds = developmentSeconds(batch);
+      const total = dropSeconds(batch);
+      if (!Number.isFinite(seconds) || !Number.isFinite(total) || total <= 0) return "";
+      return `${((seconds / total) * 100).toFixed(1)}%`;
+    }
+    function developmentSummary(batch) {
+      const duration = formatDuration(developmentSeconds(batch));
+      const ratio = developmentRatio(batch);
+      return ratio ? `${duration}（${ratio}）` : duration;
+    }
+    function durationBetween(batch, startStage, endStage) {
+      const startTime = milestoneTime(batch, startStage);
+      const endTime = milestoneTime(batch, endStage);
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return NaN;
+      return endTime - startTime;
+    }
+    function temperatureDevelopmentText(batch) {
+      const firstTemp = stageSummary(batch, "一爆開始").temp;
+      const dropTemp = stageSummary(batch, "下豆").temp;
+      if (!Number.isFinite(firstTemp) || !Number.isFinite(dropTemp)) return "--";
+      const diff = dropTemp - firstTemp;
+      const sign = diff >= 0 ? "+" : "";
+      return `${formatTempValue(firstTemp)} → ${formatTempValue(dropTemp)}（${sign}${diff.toFixed(diff % 1 ? 1 : 0)}°C）`;
+    }
+    function compareSeconds(batchIndex, getter, longText, middleText, shortText) {
+      const values = state.batches.map((batch) => getter(batch));
+      const current = values[batchIndex];
+      const finiteValues = values.filter(Number.isFinite);
+      if (!Number.isFinite(current) || finiteValues.length < 2) return "--";
+      const min = Math.min(...finiteValues);
+      const max = Math.max(...finiteValues);
+      if (min === max) return "相同";
+      if (current === max) return longText;
+      if (current === min) return shortText;
+      return middleText;
+    }
+    function rorSamples(batch) {
+      const turningPointTime = milestoneTime(batch, "回溫點");
+      return batch.logs
+        .map((log) => ({ time: parseTimeToSeconds(log.time), temp: Number(log.temp) }))
+        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
+        .sort((a, b) => a.time - b.time)
+        .map((point, index, points) => {
+          const previous = points[index - 1];
+          if (!previous || point.time <= previous.time) return null;
+          if (Number.isFinite(turningPointTime) && point.time <= turningPointTime) return null;
+          return { time: point.time, value: ((point.temp - previous.temp) / (point.time - previous.time)) * 60 };
+        })
+        .filter((point) => point && Number.isFinite(point.value));
+    }
+    function formatRorValue(value) {
+      return Number.isFinite(value) ? `約 ${Math.round(value)}` : "--";
+    }
+    function rorNearStage(batch, stageName) {
+      const stageTime = milestoneTime(batch, stageName);
+      if (!Number.isFinite(stageTime)) return "--";
+      const samples = rorSamples(batch);
+      if (!samples.length) return "--";
+      const nearest = samples.reduce((best, sample) => Math.abs(sample.time - stageTime) < Math.abs(best.time - stageTime) ? sample : best, samples[0]);
+      return formatRorValue(nearest.value);
+    }
+    function lowestRorInRange(batch, startStage, endStage) {
+      const startTime = milestoneTime(batch, startStage);
+      const endTime = milestoneTime(batch, endStage);
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) return "--";
+      const values = rorSamples(batch).filter((sample) => sample.time >= startTime && sample.time <= endTime).map((sample) => sample.value);
+      return values.length ? formatRorValue(Math.min(...values)) : "--";
+    }
+    function batchPoints(batch) {
+      return batch.logs
+        .map((log) => ({ time: parseTimeToSeconds(log.time), temp: Number(log.temp), note: log.stage || log.note }))
+        .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.temp) && point.temp > 0)
+        .sort((a, b) => a.time - b.time);
+    }
+
+    function chartEndTime(batch) {
+      const dropTime = milestoneTime(batch, "下豆");
+      if (Number.isFinite(dropTime) && dropTime > 0) return Math.min(dropTime, MAX_CHART_TIME);
+      return MAX_CHART_TIME;
+    }
+
+    function isAfterDrop(batch, log) {
+      const dropTime = milestoneTime(batch, "下豆");
+      const time = parseTimeToSeconds(log?.time);
+      return Number.isFinite(dropTime) && Number.isFinite(time) && time > dropTime;
+    }
+
+    function exportLogs(batch) {
+      return batch.logs.filter((log) => !isAfterDrop(batch, log));
+    }
+
+    function chartPoints(batch) {
+      const endTime = chartEndTime(batch);
+      return batchPoints(batch).filter((point) => point.time <= endTime);
+    }
+
+    function rorPoints(batch) {
+      const endTime = chartEndTime(batch);
+      return batch.logs
+        .map((log, index) => ({ time: parseTimeToSeconds(log.time), ror: Number(autoRor(batch, index)) }))
+        .filter((point) => Number.isFinite(point.time) && point.time <= endTime && Number.isFinite(point.ror))
+        .sort((a, b) => a.time - b.time);
+    }
+
+    function stagePoint(batch, stageName) {
+      const log = batch.logs.find((item) => item.stage === stageName);
+      if (log) {
+        const time = parseTimeToSeconds(log.stageTime || log.time);
+        const temp = Number(log.exactTemp || log.exactTime || log.temp);
+        if (Number.isFinite(time)) return { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null };
+      }
+      const milestone = batch.milestones.find((item) => item.name === stageName);
+      const time = parseTimeToSeconds(milestone?.time);
+      const temp = Number(milestone?.exactTemp || milestone?.exactTime || milestone?.temp);
+      return Number.isFinite(time) ? { time, temp: Number.isFinite(temp) && temp > 0 ? temp : null } : null;
+    }
+
+    function stageAnnotations(series, xScale, top, plotHeight, left, rightLimit, compact = false) {
+      const stages = milestoneNames
+        .filter((name) => name !== "入豆")
+        .map((name) => ({
+          name,
+          entries: series
+            .map(({ batch, index }) => ({ batch, index, point: stagePoint(batch, name) }))
+            .filter((entry) => entry.point)
+        }))
+        .filter((stage) => stage.entries.length);
+      const positionedStages = stages.map((stage) => {
+        const avgTime = stage.entries.reduce((sum, entry) => sum + entry.point.time, 0) / stage.entries.length;
+        const x = Math.max(left + 42, Math.min(rightLimit - 42, xScale(avgTime)));
+        return { ...stage, x, labelX: x };
+      });
+      const minGap = compact ? 82 : 100;
+      for (let index = 1; index < positionedStages.length; index += 1) {
+        positionedStages[index].labelX = Math.max(positionedStages[index].labelX, positionedStages[index - 1].labelX + minGap);
+      }
+      for (let index = positionedStages.length - 2; index >= 0; index -= 1) {
+        positionedStages[index].labelX = Math.min(positionedStages[index].labelX, positionedStages[index + 1].labelX - minGap);
+      }
+      return positionedStages
+        .map((stage, stageIndex) => {
+          const x = Math.max(left + 42, Math.min(rightLimit - 42, stage.x));
+          const labelX = Math.max(left + 42, Math.min(rightLimit - 42, stage.labelX));
+          const titleY = top - (compact ? 58 : 70) + (stageIndex % 2) * (compact ? 36 : 42);
+          const rows = stage.entries.map((entry, rowIndex) => {
+            const temp = entry.point.temp == null ? "" : ` / ${entry.point.temp.toFixed(entry.point.temp % 1 ? 1 : 0)}°`;
+            return `<text x="${labelX}" y="${titleY + 18 + rowIndex * (compact ? 12 : 13)}" text-anchor="middle" fill="${colors[entry.index]}" font-size="${compact ? 10 : 11}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="4">${escapeHtml(formatDuration(entry.point.time) + temp)}</text>`;
+          }).join("");
+          const leader = Math.abs(labelX - x) > 1 ? `<line x1="${x}" y1="${top - 5}" x2="${labelX}" y2="${titleY + 4}" stroke="#c7b8a5" stroke-width="1"></line>` : "";
+          return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + plotHeight}" stroke="#98a2b3" stroke-dasharray="4 4"></line>${leader}<text x="${labelX}" y="${titleY}" text-anchor="middle" fill="#111827" font-size="${compact ? 11 : 12}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(stage.name)}</text>${rows}`;
+        }).join("");
+    }
+
+    function noteAnnotations(series, xScale, yScale, top, plotBottom, compact = false) {
+      const fontSize = compact ? 9 : 10;
+      const lineHeight = compact ? 13 : 15;
+      const labelTop = plotBottom + (compact ? 18 : 20);
+      const minX = 70;
+      const maxX = 820;
+      const lanes = [];
+      const items = series.flatMap(({ batch, index }) => batch.logs
+        .map((log) => ({ time: parseTimeToSeconds(log.time), temp: Number(log.temp), note: String(log.note || "").trim(), index, log }))
+        .filter((item) => item.note && Number.isFinite(item.time) && Number.isFinite(item.temp) && item.temp > 0 && !isAfterDrop(batch, item.log))
+      ).sort((a, b) => a.time - b.time || a.index - b.index);
+
+      return items.map((item) => {
+        const x = xScale(item.time);
+        const estimatedWidth = Math.max(30, Math.min(120, item.note.length * fontSize * 0.72));
+        const preferredX = Math.max(minX, Math.min(x + 8, maxX - estimatedWidth));
+        const laneIndex = lanes.findIndex((lastRight) => preferredX >= lastRight + 10);
+        const lane = laneIndex >= 0 ? laneIndex : lanes.length;
+        const labelX = laneIndex >= 0 || !lanes.length ? preferredX : Math.max(minX, Math.min(Math.min(...lanes) + 10, maxX - estimatedWidth));
+        lanes[lane] = labelX + estimatedWidth;
+        const labelY = labelTop + lane * lineHeight;
+        return `<line x1="${x}" y1="${plotBottom}" x2="${x}" y2="${plotBottom + 8}" stroke="${colors[item.index]}" stroke-width="1.5" opacity="0.75"></line><text x="${labelX}" y="${labelY}" fill="${colors[item.index]}" font-size="${fontSize}" font-weight="800" paint-order="stroke" stroke="#fff" stroke-width="5">${escapeHtml(item.note)}</text>`;
+      }).join("");
+    }
+
+    function nextLogTime(batch) {
+      const seconds = [...batch.logs].reverse().map((log) => parseTimeToSeconds(log.time)).find((item) => Number.isFinite(item));
+      const nextSeconds = Number.isFinite(seconds) ? seconds + 30 : 0;
+      return nextSeconds <= MAX_CHART_TIME ? formatDuration(nextSeconds) : "";
+    }
+
+    function autoRor(batch, logIndex) {
+      const current = batch.logs[logIndex];
+      const currentTime = parseTimeToSeconds(current?.time);
+      const currentTemp = Number(current?.temp);
+      if (!Number.isFinite(currentTime) || !Number.isFinite(currentTemp) || currentTemp <= 0) return "";
+      const turningPointTime = milestoneTime(batch, "回溫點");
+      if (!Number.isFinite(turningPointTime) || currentTime <= turningPointTime) return "";
+
+      const previous = [...batch.logs]
+        .slice(0, logIndex)
+        .reverse()
+        .find((log) => {
+          const time = parseTimeToSeconds(log.time);
+          return Number.isFinite(time) &&
+            (!Number.isFinite(turningPointTime) || time >= turningPointTime) &&
+            Number.isFinite(Number(log.temp)) &&
+            Number(log.temp) > 0;
+        });
+      const previousTime = parseTimeToSeconds(previous?.time);
+      const previousTemp = Number(previous?.temp);
+      if (!Number.isFinite(previousTime) || previousTime >= currentTime || !Number.isFinite(previousTemp)) return "";
+
+      return (currentTemp - previousTemp).toFixed(1);
+    }
+
+    function milestoneTime(batch, name) {
+      const logStage = batch.logs.find((log) => log.stage === name);
+      const logStageTime = parseTimeToSeconds(logStage?.stageTime || logStage?.time);
+      if (Number.isFinite(logStageTime)) return logStageTime;
+      const milestone = batch.milestones.find((item) => item.name === name);
+      return parseTimeToSeconds(milestone?.time);
+    }
+
+    function syncLogStageTime(batch, logIndex) {
+      const log = batch.logs[logIndex];
+      if (!log || !log.stage) return;
+      if (!log.stageTime) log.stageTime = log.time || "";
+      const milestone = batch.milestones.find((item) => item.name === log.stage);
+      if (milestone) {
+        milestone.time = log.stageTime || log.time || "";
+        milestone.exactTemp = log.exactTemp || log.exactTime || "";
+        milestone.temp = log.exactTemp || log.exactTime || log.temp || "";
+      }
+    }
+
+    function syncMilestonesFromLogs(batch) {
+      batch.logs
+        .filter((log) => log.stage)
+        .sort((a, b) => (parseTimeToSeconds(a.stageTime || a.time) ?? 0) - (parseTimeToSeconds(b.stageTime || b.time) ?? 0))
+        .forEach((log) => {
+          const milestone = batch.milestones.find((item) => item.name === log.stage);
+          if (!milestone) return;
+          milestone.time = log.stageTime || log.time || "";
+          milestone.exactTemp = log.exactTemp || log.exactTime || "";
+          milestone.temp = log.exactTemp || log.exactTime || log.temp || "";
+        });
+    }
+
+    function updateRorFields() {
+      document.querySelectorAll("[data-ror]").forEach((node) => {
+        const batchIndex = Number(node.dataset.ror);
+        const logIndex = Number(node.dataset.index);
+        node.value = autoRor(state.batches[batchIndex], logIndex);
+      });
+    }
+
+    function syncFields() {
+      beanFields.forEach((field) => {
+        const node = document.querySelector(`[data-field="bean.${field}"]`);
+        if (node) node.value = state.bean[field] || "";
+      });
+      document.querySelector(`[data-field="decision.winner"]`).value = state.decision.winner;
+      document.querySelector(`[data-field="decision.conclusion"]`).value = state.decision.conclusion;
+    }
+
+    function renderTabs() {
+      batchTabs.innerHTML = state.batches.map((batch, index) => `
+        <button class="tab ${state.activeBatch === index ? "active" : ""}" type="button" data-tab="${index}" style="border-color:${state.activeBatch === index ? colors[index] : ""}">
+          ${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}
+        </button>
+      `).join("");
+    }
+
+    function renderBatchPanel() {
+      const index = state.activeBatch;
+      const batch = state.batches[index];
+      batchPanel.innerHTML = `
+        <div class="summary-grid">
+          <div class="metric"><strong>${lossRate(batch) ? `${lossRate(batch)}%` : "--"}</strong><span>損失率</span></div>
+          <div class="metric"><strong>${developmentTime(batch)}</strong><span>發展時間</span></div>
+          <div class="metric"><strong>${highestTemp(batch)}</strong><span>最高溫</span></div>
+          <div class="metric"><strong>${escapeHtml(batch.cupping.score || "--")}</strong><span>杯測分數</span></div>
+        </div>
+
+        <div class="card content field-grid">
+          <label>鍋次名稱<input data-batch="${index}" data-batch-field="name" value="${escapeHtml(batch.name)}"></label>
+          <label>烘法策略<input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}"></label>
+          <label>預計烘焙<input data-batch="${index}" data-batch-field="targetRoast" value="${escapeHtml(batch.targetRoast)}"></label>
+          <label>實際烘焙<input data-batch="${index}" data-batch-field="actualRoast" value="${escapeHtml(batch.actualRoast)}"></label>
+          <label>生豆量 g<input data-batch="${index}" data-batch-field="greenWeight" value="${escapeHtml(batch.greenWeight)}" type="number" min="0" step="0.1"></label>
+          <label>烘後重量 g<input data-batch="${index}" data-batch-field="roastedWeight" value="${escapeHtml(batch.roastedWeight)}" type="number" min="0" step="0.1"></label>
+          <label class="wide">火力策略<input data-batch="${index}" data-batch-field="heatPlan" value="${escapeHtml(batch.heatPlan)}"></label>
+          <label>風門策略<input data-batch="${index}" data-batch-field="damperPlan" value="${escapeHtml(batch.damperPlan)}"></label>
+          <label>轉速<input data-batch="${index}" data-batch-field="drumSpeed" value="${escapeHtml(batch.drumSpeed)}"></label>
+        </div>
+
+        <div class="card content">
+          <div class="section-head" style="padding:0 0 10px;border-bottom:0;">
+            <h3>30 秒紀錄</h3>
+            <button class="ghost" type="button" data-add-log="${index}">＋ 新增</button>
+          </div>
+          <div class="log-list">
+            ${batch.logs.map((log, logIndex) => `
+              <div class="log-card ${isAfterDrop(batch, log) ? "after-drop" : ""}">
+                <div class="log-head">
+                  <span>${escapeHtml(log.time || `第 ${logIndex + 1} 筆`)}</span>
+                  <button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button>
+                </div>
+                <div class="mini-grid">
+                  <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></label>
+                  <label>溫度<input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></label>
+                  <label>RoR<input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(autoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></label>
+                  <label>重要階段
+                    <select data-log="${index}" data-index="${logIndex}" data-field="stage">
+                      <option value=""></option>
+                      ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
+                    </select>
+                  </label>
+                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></label>
+                  <label>精確溫度<input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" inputmode="decimal"></label>
+                  <label>備註<input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></label>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="card content">
+          <h3>重要階段</h3>
+          <div class="milestone-list">
+            ${batch.milestones.map((milestone, milestoneIndex) => `
+              <div class="milestone-card">
+                <div class="log-head"><span>${escapeHtml(milestone.name)}</span></div>
+                <div class="mini-grid">
+                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></label>
+                  <label>精確溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" inputmode="decimal"></label>
+                  <label>溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></label>
+                </div>
+                <label style="margin-top:8px;">備註<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></label>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="card content">
+          <h3>單鍋曲線</h3>
+          <svg class="chart" id="single-chart" viewBox="0 0 900 500" role="img" aria-label="單鍋曲線"></svg>
+        </div>
+      `;
+      renderSingleChart();
+    }
+
+    function renderCupping() {
+      cuppingList.innerHTML = state.batches.map((batch, index) => `
+        <div class="cupping-card" style="border-top:5px solid ${colors[index]}">
+          <h3 style="color:${colors[index]}">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</h3>
+          <div class="field-grid">
+            <label>乾香 / 濕香<select data-cupping="${index}" data-field="aroma">${scoreOptions(batch.cupping.aroma)}</select></label>
+            <label>酸質<select data-cupping="${index}" data-field="acidity">${scoreOptions(batch.cupping.acidity)}</select></label>
+            <label>甜感<select data-cupping="${index}" data-field="sweetness">${scoreOptions(batch.cupping.sweetness)}</select></label>
+            <label>醇厚度<select data-cupping="${index}" data-field="bodyFeel">${scoreOptions(batch.cupping.bodyFeel)}</select></label>
+            <label>餘韻<select data-cupping="${index}" data-field="finish">${scoreOptions(batch.cupping.finish)}</select></label>
+            <label>整體分數<input data-cupping="${index}" data-field="score" value="${escapeHtml(batch.cupping.score)}"></label>
+            <label>判斷<input data-cupping="${index}" data-field="judgement" value="${escapeHtml(batch.cupping.judgement)}"></label>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function drawChart(svg, series, title) {
+      const width = 900, height = 500, left = 62, right = 26, top = 166, bottom = 92;
+      const plotWidth = width - left - right;
+      const plotHeight = height - top - bottom;
+      svg.innerHTML = `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect><text x="${left}" y="24" fill="#344054" font-size="18" font-weight="700">${title}</text>`;
+      if (!series.length) {
+        svg.innerHTML += `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="#66737f" font-size="17">輸入至少兩筆時間與溫度後顯示曲線</text>`;
+        return;
+      }
+      const all = series.flatMap((item) => item.points);
+      const allRor = series.flatMap((item) => rorPoints(item.batch));
+      const maxTime = Math.min(Math.max(...series.map((item) => item.endTime), 60), MAX_CHART_TIME);
+      const minTemp = Math.floor((Math.min(...all.map((point) => point.temp), 80) - 10) / 10) * 10;
+      const maxTemp = Math.ceil((Math.max(...all.map((point) => point.temp), 220) + 10) / 10) * 10;
+      const minRor = Math.min(0, Math.floor((Math.min(...allRor.map((point) => point.ror), 0) - 2) / 2) * 2);
+      const maxRor = Math.max(10, Math.ceil((Math.max(...allRor.map((point) => point.ror), 10) + 2) / 2) * 2);
+      const xScale = (time) => left + (time / Math.max(maxTime, 1)) * plotWidth;
+      const yScale = (temp) => top + plotHeight - ((temp - minTemp) / Math.max(maxTemp - minTemp, 1)) * plotHeight;
+      const rorYScale = (ror) => top + plotHeight - ((ror - minRor) / Math.max(maxRor - minRor, 1)) * plotHeight;
+      const yStep = maxTemp - minTemp > 120 ? 40 : 20;
+      const rorStep = maxRor - minRor > 18 ? 4 : 2;
+      const xStep = maxTime > 900 ? 180 : 120;
+      for (let temp = minTemp; temp <= maxTemp; temp += yStep) {
+        const y = yScale(temp);
+        svg.innerHTML += `<line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}" stroke="#e2e8f0"></line><text x="${left - 8}" y="${y + 4}" text-anchor="end" fill="#66737f" font-size="12">${temp}</text>`;
+      }
+      for (let time = 0; time <= maxTime; time += xStep) {
+        const x = xScale(time);
+        svg.innerHTML += `<line x1="${x}" y1="${top}" x2="${x}" y2="${top + plotHeight}" stroke="#eef2f6"></line><text x="${x}" y="${height - 26}" text-anchor="middle" fill="#66737f" font-size="12">${formatDuration(time)}</text>`;
+      }
+      for (let ror = minRor; ror <= maxRor; ror += rorStep) {
+        const y = rorYScale(ror);
+        svg.innerHTML += `<text x="${width - right + 6}" y="${y + 4}" fill="#475467" font-size="11">${ror}</text>`;
+      }
+      svg.innerHTML += `<line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3"></line><line x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}" stroke="#98a2b3"></line><line x1="${width - right}" y1="${top}" x2="${width - right}" y2="${top + plotHeight}" stroke="#98a2b3"></line><text x="12" y="${top + 4}" fill="#475467" font-size="12">°C</text><text x="${width - 6}" y="${top + 4}" text-anchor="end" fill="#475467" font-size="12">RoR</text>`;
+      svg.innerHTML += stageAnnotations(series, xScale, top, plotHeight, left, width - right, series.length === 1);
+      series.forEach(({ batch, index, points }) => {
+        const path = points.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${yScale(point.temp).toFixed(1)}`).join(" ");
+        svg.innerHTML += `<path d="${path}" fill="none" stroke="${colors[index]}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>`;
+        points.forEach((point, pointIndex) => {
+          const x = xScale(point.time), y = yScale(point.temp);
+          svg.innerHTML += `<circle cx="${x}" cy="${y}" r="6.5" fill="${colors[index]}" stroke="#fff" stroke-width="2.2"></circle>`;
+        });
+        const rors = rorPoints(batch);
+        if (rors.length >= 2) {
+          const rorPath = rors.map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xScale(point.time).toFixed(1)} ${rorYScale(point.ror).toFixed(1)}`).join(" ");
+          svg.innerHTML += `<path d="${rorPath}" fill="none" stroke="${colors[index]}" stroke-width="2.5" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"></path>`;
+        }
+      });
+      svg.innerHTML += noteAnnotations(series, xScale, yScale, top, top + plotHeight, series.length === 1);
+      svg.innerHTML += `<text x="${width - right - 6}" y="54" text-anchor="end" fill="#475467" font-size="11">實線豆溫 / 虛線 RoR</text>`;
+    }
+
+    function renderCharts() {
+      const series = state.batches.map((batch, index) => ({ batch, index, points: chartPoints(batch), endTime: chartEndTime(batch) })).filter((item) => item.batch.enabled && item.points.length >= 2);
+      drawChart(chart, series, "三鍋曲線比較");
+      document.querySelector("#chart-toggles").innerHTML = state.batches.map((batch, index) => `
+        <label class="checkline">
+          <input type="checkbox" data-batch-enabled="${index}" ${batch.enabled ? "checked" : ""}>
+          <span style="color:${colors[index]}">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</span>
+        </label>
+      `).join("");
+    }
+
+    function keySummaryRows() {
+      return [
+        { label: "入豆溫度", value: (batch) => stageTempText(batch, "入豆") },
+        { label: "回溫點（時間 / 溫度）", value: (batch) => stageTimeTempText(batch, "回溫點") },
+        { label: "轉黃時間 / 溫度", value: (batch) => stageTimeTempText(batch, "轉黃") },
+        { label: "肉桂色時間 / 溫度", value: (batch) => stageTimeTempText(batch, "肉桂色") },
+        { label: "一爆開始時間 / 溫度", value: (batch) => stageTimeTempText(batch, "一爆開始") },
+        { label: "下豆時間 / 溫度", value: (batch) => stageTimeTempText(batch, "下豆") },
+        { label: "發展時間（自一爆起）", value: (batch) => developmentSummary(batch) },
+        { label: "總烘焙時間", value: (batch) => formatDuration(dropSeconds(batch)) },
+        { label: "烘焙損失率", value: (batch) => lossRate(batch) ? `${lossRate(batch)}%` : "--" }
+      ];
+    }
+
+    function durationSummaryRows() {
+      return [
+        { label: "回溫後到轉黃", value: (batch) => formatDuration(durationBetween(batch, "回溫點", "轉黃")) },
+        { label: "脫水段（轉黃→肉桂色）", value: (batch) => formatDuration(durationBetween(batch, "轉黃", "肉桂色")) },
+        { label: "梅納反應段（肉桂色→一爆）", value: (batch) => formatDuration(durationBetween(batch, "肉桂色", "一爆開始")) },
+        { label: "一爆發展段（一爆→下豆）", value: (batch) => formatDuration(developmentSeconds(batch)) },
+        { label: "總烘焙時間", value: (batch) => formatDuration(dropSeconds(batch)) },
+        { label: "轉黃點 RoR（回溫後）", value: (batch) => rorNearStage(batch, "轉黃") },
+        { label: "一爆前最低 RoR", value: (batch) => lowestRorInRange(batch, "肉桂色", "一爆開始") },
+        { label: "下豆前最低 RoR", value: (batch) => lowestRorInRange(batch, "一爆開始", "下豆") }
+      ];
+    }
+
+    function developmentCompareRows() {
+      return [
+        { label: "下豆溫度", value: (batch) => stageTempText(batch, "下豆") },
+        { label: "發展時間", value: (batch) => formatDuration(developmentSeconds(batch)) },
+        { label: "發展時間占比", value: (batch) => developmentRatio(batch) || "--" },
+        { label: "發展敘述", value: (_batch, index) => compareSeconds(index, developmentSeconds, "時間最長", "居中", "時間最短") },
+        { label: "發展溫度變化", value: (batch) => temperatureDevelopmentText(batch) },
+        { label: "損失率", value: (batch) => lossRate(batch) ? `${lossRate(batch)}%` : "--" },
+        { label: "整體時間長短", value: (_batch, index) => compareSeconds(index, dropSeconds, "最長", "居中", "最短") }
+      ];
+    }
+
+    function buildSummaryRows(definitions) {
+      return definitions.map((definition) => [definition.label, ...state.batches.map((batch, index) => definition.value(batch, index))]);
+    }
+
+    function renderSummaryTable(title, definitions) {
+      const headers = state.batches.map((batch, index) => `<div class="summary-cell" style="color:${colors[index]}">${escapeHtml(batchLabel(batch, index))}</div>`).join("");
+      const rows = buildSummaryRows(definitions).map((row) => `<div class="summary-row"><div class="summary-cell">${escapeHtml(row[0])}</div>${row.slice(1).map((value) => `<div class="summary-cell">${escapeHtml(value)}</div>`).join("")}</div>`).join("");
+      return `<div class="summary-card"><h4>${escapeHtml(title)}</h4><div class="summary-table-wrap"><div class="summary-list" role="table" aria-label="${escapeHtml(title)}"><div class="summary-row summary-head" role="row"><div class="summary-cell" role="columnheader">項目</div>${headers}</div>${rows}</div></div></div>`;
+    }
+
+    function renderRoastSummary() {
+      roastSummary.innerHTML = `
+        <h3>每次烘焙自動總結</h3>
+        ${renderSummaryTable("關鍵時間點與數據對比", keySummaryRows())}
+        ${renderSummaryTable("各階段時間長度與 RoR", durationSummaryRows())}
+        ${renderSummaryTable("下豆與發展表現對比", developmentCompareRows())}
+      `;
+    }
+
+    function renderSingleChart() {
+      const svg = document.querySelector("#single-chart");
+      if (!svg) return;
+      const index = state.activeBatch;
+      const batch = state.batches[index];
+      drawChart(svg, [{ batch, index, points: chartPoints(batch), endTime: chartEndTime(batch) }].filter((item) => item.points.length >= 2), "單鍋曲線");
+    }
+
+    function renderAll() {
+      syncFields();
+      renderTabs();
+      renderBatchPanel();
+      renderCupping();
+      renderCharts();
+      renderRoastSummary();
+      renderSingleChart();
+      renderHistoryList();
+    }
+
+    function getHistoryRecords() {
+      try {
+        const records = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        return Array.isArray(records) ? records : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setHistoryRecords(records) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
+    }
+
+    function getRecordTitle(recordState = state) {
+      const date = recordState.bean?.date || today();
+      const bean = recordState.bean?.beanItem || "未命名豆子";
+      return `${date} ${bean}`;
+    }
+
+    function saveRecord() {
+      const records = getHistoryRecords();
+      const now = new Date();
+      records.unshift({
+        id: `${now.getTime()}`,
+        title: getRecordTitle(),
+        savedAt: now.toISOString(),
+        state: JSON.parse(JSON.stringify(state))
+      });
+      setHistoryRecords(records.slice(0, 30));
+      renderHistoryList();
+      status.textContent = "已保存本次紀錄";
+    }
+
+    function renderHistoryList() {
+      const list = document.querySelector("#history-list");
+      if (!list) return;
+      const records = getHistoryRecords();
+      if (!records.length) {
+        list.innerHTML = `<div class="history-item"><div><div class="history-title">尚無已保存紀錄</div><div class="history-meta">完成一次烘焙後按「保存本次」，下次就能從這裡載入。</div></div></div>`;
+        return;
+      }
+      list.innerHTML = records.map((record) => {
+        const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-TW", { hour12: false }) : "";
+        return `
+          <div class="history-item">
+            <div>
+              <div class="history-title">${escapeHtml(record.title || getRecordTitle(record.state))}</div>
+              <div class="history-meta">保存時間：${escapeHtml(savedAt)}</div>
+            </div>
+            <button class="secondary" type="button" data-load-record="${escapeHtml(record.id)}">載入</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleHistory() {
+      const panel = document.querySelector("#history-panel");
+      if (!panel) return;
+      panel.classList.toggle("active");
+      renderHistoryList();
+      if (panel.classList.contains("active")) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function loadRecord(id) {
+      const record = getHistoryRecords().find((item) => item.id === id);
+      if (!record) return;
+      if (!window.confirm("載入前次紀錄會取代目前畫面上的暫存內容，確定要載入嗎？")) return;
+      state = record.state;
+      state.activeBatch = 0;
+      renderAll();
+      save();
+      status.textContent = `已載入：${record.title || getRecordTitle(record.state)}`;
+    }
+
+    function exportCSV() {
+      let rows = `<tr><td class="title" colspan="10">烘豆曲線紀錄</td></tr>`;
+      rows += xlsSection("豆子與試烘目標", ["項目", "內容"], [["試烘日期", state.bean.date], ["生豆品項", state.bean.beanItem], ["處理法", state.bean.process], ["假設條件", state.bean.hypothesis]]);
+      rows += xlsSection("關鍵時間點與數據對比", ["項目", ...state.batches.map(batchLabel)], buildSummaryRows(keySummaryRows()));
+      rows += xlsSection("各階段時間長度與 RoR", ["項目", ...state.batches.map(batchLabel)], buildSummaryRows(durationSummaryRows()));
+      rows += xlsSection("下豆與發展表現對比", ["項目", ...state.batches.map(batchLabel)], buildSummaryRows(developmentCompareRows()));
+      state.batches.forEach((batch, index) => {
+        syncMilestonesFromLogs(batch);
+        rows += xlsSection(`${batch.name || `第 ${index + 1} 鍋`} 烘法設定`, ["項目", "內容"], [["烘法策略", batch.strategy], ["生豆量", batch.greenWeight], ["烘後重量", batch.roastedWeight], ["損失率", lossRate(batch)], ["發展時間", developmentTime(batch)], ["最高溫", highestTemp(batch)]], index);
+        rows += xlsSection("30 秒詳細數據", ["時間", "溫度", "RoR", "重要階段", "階段精確時間", "精確溫度", "備註"], exportLogs(batch).map((log) => [log.time, log.temp, autoRor(batch, batch.logs.indexOf(log)), log.stage, log.stageTime, log.exactTemp || log.exactTime, log.note]), index);
+        rows += xlsSection("重要階段", ["階段", "階段精確時間", "精確溫度", "溫度", "備註"], batch.milestones.map((milestone) => [milestone.name, milestone.time, milestone.exactTemp || milestone.exactTime, milestone.temp, milestone.note]), index);
+      });
+      rows += xlsSection("杯測比較", ["鍋次", "乾香/濕香", "酸質", "甜感", "醇厚度", "餘韻", "整體分數", "判斷"], state.batches.map((batch) => [batch.name, ...cuppingFields.map((field) => batch.cupping[field])]));
+      const winner = state.decision.winner === "" ? "" : state.batches[Number(state.decision.winner)]?.name;
+      rows += xlsSection("結論", ["項目", "內容"], [["最適合烘法", winner], ["結論與下次調整", state.decision.conclusion]]);
+      downloadWorkbook(`烘豆曲線紀錄_${(state.bean.date || today()).replace(/-/g, "")}.xls`, rows);
+    }
+
+    document.addEventListener("input", (event) => {
+      const field = event.target.dataset.field;
+      if (field?.startsWith("bean.")) state.bean[field.split(".")[1]] = event.target.value;
+      if (field?.startsWith("decision.")) state.decision[field.split(".")[1]] = event.target.value;
+      if (event.target.dataset.batchField) state.batches[Number(event.target.dataset.batch)][event.target.dataset.batchField] = event.target.value;
+      if (event.target.dataset.milestone) state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = event.target.value;
+      if (event.target.dataset.log) {
+        const batchIndex = Number(event.target.dataset.log);
+        const logIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        syncLogStageTime(state.batches[batchIndex], logIndex);
+      }
+      if (event.target.dataset.cupping) state.batches[Number(event.target.dataset.cupping)].cupping[event.target.dataset.field] = event.target.value;
+      save();
+      if (event.target.dataset.batchField === "name") renderTabs();
+    });
+
+    document.addEventListener("change", (event) => {
+      if (event.target.dataset.log) {
+        const batchIndex = Number(event.target.dataset.log);
+        const logIndex = Number(event.target.dataset.index);
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        syncLogStageTime(state.batches[batchIndex], logIndex);
+        renderBatchPanel();
+        save();
+        return;
+      }
+      if (event.target.dataset.cupping) {
+        state.batches[Number(event.target.dataset.cupping)].cupping[event.target.dataset.field] = event.target.value;
+        save();
+        return;
+      }
+      if (event.target.dataset.batchEnabled) {
+        state.batches[Number(event.target.dataset.batchEnabled)].enabled = event.target.checked;
+        save();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-tab]");
+      if (tab) {
+        state.activeBatch = Number(tab.dataset.tab);
+        renderTabs();
+        renderBatchPanel();
+        renderSingleChart();
+        return;
+      }
+      const add = event.target.closest("[data-add-log]");
+      if (add) {
+        const batch = state.batches[Number(add.dataset.addLog)];
+        const nextTime = nextLogTime(batch);
+        if (!nextTime) {
+          status.textContent = "已到 13:00，不再新增時間列。";
+          return;
+        }
+        batch.logs.push({ time: nextTime, temp: "", ror: "", stage: "", stageTime: "", exactTemp: "", note: "" });
+        renderBatchPanel();
+        save();
+        return;
+      }
+      const del = event.target.closest("[data-delete-log]");
+      if (del) {
+        const batch = state.batches[Number(del.dataset.deleteLog)];
+        if (batch.logs.length <= 1) return;
+        batch.logs.splice(Number(del.dataset.index), 1);
+        renderBatchPanel();
+        save();
+        return;
+      }
+      const load = event.target.closest("[data-load-record]");
+      if (load) {
+        loadRecord(load.dataset.loadRecord);
+      }
+    });
+
+    document.querySelector("#save-record-button").addEventListener("click", saveRecord);
+    document.querySelector("#history-toggle-button").addEventListener("click", toggleHistory);
+    document.querySelector("#clear-button").addEventListener("click", () => {
+      if (!window.confirm("確定要清除所有數據嗎？")) return;
+      state = createState();
+      renderAll();
+      save();
+    });
+    document.querySelector("#export-button").addEventListener("click", exportCSV);
+    document.querySelector("#print-button").addEventListener("click", () => window.print());
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+    }
+
+    load();
+    renderAll();
+  </script>
+</body>
+</html>

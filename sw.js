@@ -1,7 +1,8 @@
-const CACHE_NAME = "coffee-roast-compare-v30";
+const CACHE_NAME = "coffee-roast-compare-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./app.html",
   "./mobile.html",
   "./manifest.json",
   "./assets/icons/coffee-bean-icon.png",
