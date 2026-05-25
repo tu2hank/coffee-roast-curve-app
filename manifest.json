@@ -2,7 +2,7 @@
   "name": "烘豆曲線紀錄手機板",
   "short_name": "烘豆曲線",
   "description": "記錄同一支咖啡豆 2-3 鍋烘豆曲線與杯測比較。",
-  "start_url": "./app.html?v=share-entry-v6",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4efe7",

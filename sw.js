@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-roast-compare-v31";
+const CACHE_NAME = "coffee-roast-compare-v32";
 const APP_SHELL = [
   "./",
   "./index.html",
