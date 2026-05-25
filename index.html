@@ -662,6 +662,8 @@
     const cuppingScoreFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish"];
     const cuppingFields = [...cuppingScoreFields, "score", "judgement"];
     const MAX_CHART_TIME = 13 * 60;
+    const MIN_CHART_TEMP = 0;
+    const MAX_CHART_TEMP = 230;
 
     function today() {
       return new Date().toLocaleDateString("en-CA");
@@ -682,6 +684,30 @@
       if (parts.length === 2) return parts[0] * 60 + parts[1];
       if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
       return null;
+    }
+
+    function normalizeNumberInRange(value, min, max) {
+      const text = String(value ?? "").trim();
+      if (!text) return "";
+      const number = Number(text);
+      if (!Number.isFinite(number)) return "";
+      const clamped = Math.max(min, Math.min(max, number));
+      const rounded = Math.round(clamped * 10) / 10;
+      return String(rounded);
+    }
+
+    function normalizeTimeInRange(value) {
+      const text = String(value ?? "").trim();
+      if (!text) return "";
+      const seconds = parseTimeToSeconds(text);
+      if (!Number.isFinite(seconds)) return text;
+      return formatDuration(Math.max(0, Math.min(MAX_CHART_TIME, seconds)));
+    }
+
+    function normalizeBoundedField(field, value) {
+      if (field === "temp" || field === "exactTemp" || field === "exactTime") return normalizeNumberInRange(value, MIN_CHART_TEMP, MAX_CHART_TEMP);
+      if (field === "time" || field === "stageTime") return normalizeTimeInRange(value);
+      return value;
     }
 
     function escapeHtml(value) {
@@ -864,6 +890,9 @@
         const saved = savedMilestones.find((item) => item?.name === fresh.name);
         const merged = { ...fresh, ...(saved || {}) };
         if (merged.name === "入豆" && !merged.time) merged.time = "00:00";
+        merged.time = normalizeTimeInRange(merged.time);
+        merged.temp = normalizeNumberInRange(merged.temp, MIN_CHART_TEMP, MAX_CHART_TEMP);
+        merged.exactTemp = normalizeNumberInRange(merged.exactTemp || merged.exactTime || "", MIN_CHART_TEMP, MAX_CHART_TEMP);
         return merged;
       });
     }
@@ -880,14 +909,14 @@
       }).map((log) => {
         const stage = log.stage || (milestoneNames.includes(log.note) ? log.note : "");
         return {
-          time: log.time || "",
-        temp: log.temp || "",
-        ror: log.ror || "",
-        stage,
-        stageTime: log.stageTime || (stage ? log.time || "" : ""),
-        exactTemp: log.exactTemp || log.exactTime || "",
-        note: stage && log.note === stage ? "" : log.note || ""
-      };
+          time: normalizeTimeInRange(log.time || ""),
+          temp: normalizeNumberInRange(log.temp || "", MIN_CHART_TEMP, MAX_CHART_TEMP),
+          ror: log.ror || "",
+          stage,
+          stageTime: normalizeTimeInRange(log.stageTime || (stage ? log.time || "" : "")),
+          exactTemp: normalizeNumberInRange(log.exactTemp || log.exactTime || "", MIN_CHART_TEMP, MAX_CHART_TEMP),
+          note: stage && log.note === stage ? "" : log.note || ""
+        };
       });
       return logs.length ? logs : freshLogs;
     }
@@ -1193,8 +1222,8 @@
                 <tbody>
                   ${batch.logs.map((log, logIndex) => `
                     <tr class="${isAfterDrop(batch, log) ? "after-drop" : ""}">
-                      <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></td>
-                      <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss" inputmode="numeric"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></td>
                       <td><input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(getAutoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></td>
                       <td>
                         <select data-log="${index}" data-index="${logIndex}" data-field="stage">
@@ -1202,8 +1231,8 @@
                           ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
                         </select>
                       </td>
-                      <td><input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></td>
-                      <td><input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" inputmode="decimal"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss" inputmode="numeric"></td>
+                      <td><input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></td>
                       <td><input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></td>
                       <td><button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button></td>
                     </tr>
@@ -1224,9 +1253,9 @@
                   ${batch.milestones.map((milestone, milestoneIndex) => `
                     <tr>
                       <td>${escapeHtml(milestone.name)}</td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" inputmode="decimal"></td>
-                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss" inputmode="numeric"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></td>
+                      <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></td>
                       <td><input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></td>
                     </tr>
                   `).join("")}
@@ -1850,14 +1879,18 @@
       if (event.target.dataset.milestone) {
         const batchIndex = Number(event.target.dataset.milestone);
         const milestoneIndex = Number(event.target.dataset.index);
-        state.batches[batchIndex].milestones[milestoneIndex][event.target.dataset.field] = event.target.value;
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].milestones[milestoneIndex][event.target.dataset.field] = normalized;
         save();
         return;
       }
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
-        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = normalized;
         syncLogStageTime(state.batches[batchIndex], logIndex);
         save();
         return;
@@ -1873,7 +1906,9 @@
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
-        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = normalized;
         syncLogStageTime(state.batches[batchIndex], logIndex);
         renderBatchPanels();
         save();

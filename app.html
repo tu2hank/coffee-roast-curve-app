@@ -561,6 +561,8 @@
     const cuppingScoreFields = ["aroma", "acidity", "sweetness", "bodyFeel", "finish"];
     const cuppingFields = [...cuppingScoreFields, "score", "judgement"];
     const MAX_CHART_TIME = 13 * 60;
+    const MIN_CHART_TEMP = 0;
+    const MAX_CHART_TEMP = 230;
 
     const status = document.querySelector("#status");
     const chart = document.querySelector("#chart");
@@ -584,6 +586,26 @@
       if (parts.length === 2) return parts[0] * 60 + parts[1];
       if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
       return null;
+    }
+    function normalizeNumberInRange(value, min, max) {
+      const text = String(value ?? "").trim();
+      if (!text) return "";
+      const number = Number(text);
+      if (!Number.isFinite(number)) return "";
+      const clamped = Math.max(min, Math.min(max, number));
+      return String(Math.round(clamped * 10) / 10);
+    }
+    function normalizeTimeInRange(value) {
+      const text = String(value ?? "").trim();
+      if (!text) return "";
+      const seconds = parseTimeToSeconds(text);
+      if (!Number.isFinite(seconds)) return text;
+      return formatDuration(Math.max(0, Math.min(MAX_CHART_TIME, seconds)));
+    }
+    function normalizeBoundedField(field, value) {
+      if (field === "temp" || field === "exactTemp" || field === "exactTime") return normalizeNumberInRange(value, MIN_CHART_TEMP, MAX_CHART_TEMP);
+      if (field === "time" || field === "stageTime") return normalizeTimeInRange(value);
+      return value;
     }
     function escapeHtml(value) {
       return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -691,6 +713,9 @@
         const saved = savedMilestones.find((item) => item?.name === fresh.name);
         const merged = { ...fresh, ...(saved || {}) };
         if (merged.name === "入豆" && !merged.time) merged.time = "00:00";
+        merged.time = normalizeTimeInRange(merged.time);
+        merged.temp = normalizeNumberInRange(merged.temp, MIN_CHART_TEMP, MAX_CHART_TEMP);
+        merged.exactTemp = normalizeNumberInRange(merged.exactTemp || merged.exactTime || "", MIN_CHART_TEMP, MAX_CHART_TEMP);
         return merged;
       });
     }
@@ -705,12 +730,12 @@
       }).map((log) => {
         const stage = log.stage || (milestoneNames.includes(log.note) ? log.note : "");
         return {
-          time: log.time || "",
-          temp: log.temp || "",
+          time: normalizeTimeInRange(log.time || ""),
+          temp: normalizeNumberInRange(log.temp || "", MIN_CHART_TEMP, MAX_CHART_TEMP),
           ror: log.ror || "",
           stage,
-          stageTime: log.stageTime || (stage ? log.time || "" : ""),
-          exactTemp: log.exactTemp || log.exactTime || "",
+          stageTime: normalizeTimeInRange(log.stageTime || (stage ? log.time || "" : "")),
+          exactTemp: normalizeNumberInRange(log.exactTemp || log.exactTime || "", MIN_CHART_TEMP, MAX_CHART_TEMP),
           note: stage && log.note === stage ? "" : log.note || ""
         };
       });
@@ -1072,8 +1097,8 @@
                   <button class="icon-button" type="button" data-delete-log="${index}" data-index="${logIndex}">×</button>
                 </div>
                 <div class="mini-grid">
-                  <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss"></label>
-                  <label>溫度<input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" inputmode="decimal"></label>
+                  <label>時間<input data-log="${index}" data-index="${logIndex}" data-field="time" value="${escapeHtml(log.time)}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>溫度<input data-log="${index}" data-index="${logIndex}" data-field="temp" value="${escapeHtml(log.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                   <label>RoR<input data-ror="${index}" data-index="${logIndex}" value="${escapeHtml(autoRor(batch, logIndex))}" readonly tabindex="-1" aria-label="自動計算 RoR"></label>
                   <label>重要階段
                     <select data-log="${index}" data-index="${logIndex}" data-field="stage">
@@ -1081,8 +1106,8 @@
                       ${milestoneNames.map((name) => `<option value="${escapeHtml(name)}" ${log.stage === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
                     </select>
                   </label>
-                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss"></label>
-                  <label>精確溫度<input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" inputmode="decimal"></label>
+                  <label>階段精確時間<input data-log="${index}" data-index="${logIndex}" data-field="stageTime" value="${escapeHtml(log.stageTime || "")}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>精確溫度<input data-log="${index}" data-index="${logIndex}" data-field="exactTemp" value="${escapeHtml(log.exactTemp || log.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                   <label>備註<input data-log="${index}" data-index="${logIndex}" data-field="note" value="${escapeHtml(log.note)}"></label>
                 </div>
               </div>
@@ -1097,9 +1122,9 @@
               <div class="milestone-card">
                 <div class="log-head"><span>${escapeHtml(milestone.name)}</span></div>
                 <div class="mini-grid">
-                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss"></label>
-                  <label>精確溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" inputmode="decimal"></label>
-                  <label>溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" inputmode="decimal"></label>
+                  <label>階段精確時間<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="time" value="${escapeHtml(milestone.time)}" placeholder="mm:ss" inputmode="numeric"></label>
+                  <label>精確溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="exactTemp" value="${escapeHtml(milestone.exactTemp || milestone.exactTime || "")}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
+                  <label>溫度<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="temp" value="${escapeHtml(milestone.temp)}" type="number" min="${MIN_CHART_TEMP}" max="${MAX_CHART_TEMP}" step="0.1" inputmode="decimal"></label>
                 </div>
                 <label style="margin-top:8px;">備註<input data-milestone="${index}" data-index="${milestoneIndex}" data-field="note" value="${escapeHtml(milestone.note)}"></label>
               </div>
@@ -1372,11 +1397,17 @@
       if (field?.startsWith("bean.")) state.bean[field.split(".")[1]] = event.target.value;
       if (field?.startsWith("decision.")) state.decision[field.split(".")[1]] = event.target.value;
       if (event.target.dataset.batchField) state.batches[Number(event.target.dataset.batch)][event.target.dataset.batchField] = event.target.value;
-      if (event.target.dataset.milestone) state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = event.target.value;
+      if (event.target.dataset.milestone) {
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[Number(event.target.dataset.milestone)].milestones[Number(event.target.dataset.index)][event.target.dataset.field] = normalized;
+      }
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
-        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = normalized;
         syncLogStageTime(state.batches[batchIndex], logIndex);
       }
       if (event.target.dataset.cupping) state.batches[Number(event.target.dataset.cupping)].cupping[event.target.dataset.field] = event.target.value;
@@ -1388,7 +1419,9 @@
       if (event.target.dataset.log) {
         const batchIndex = Number(event.target.dataset.log);
         const logIndex = Number(event.target.dataset.index);
-        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = event.target.value;
+        const normalized = normalizeBoundedField(event.target.dataset.field, event.target.value);
+        event.target.value = normalized;
+        state.batches[batchIndex].logs[logIndex][event.target.dataset.field] = normalized;
         syncLogStageTime(state.batches[batchIndex], logIndex);
         renderBatchPanel();
         save();
