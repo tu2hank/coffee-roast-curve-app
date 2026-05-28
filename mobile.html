@@ -47,38 +47,34 @@
       top: 0;
       z-index: 10;
       width: 100%;
-      padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
       border-bottom: 1px solid var(--line);
       background: rgba(17, 14, 12, 0.96);
       backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     h1 {
       margin: 0;
-      font-size: 24px;
-      line-height: 1.18;
-      letter-spacing: 0;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
     }
 
     .title-mark {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       flex: 0 0 auto;
     }
 
     .title-line {
       display: flex;
       align-items: center;
-      gap: 9px;
-      min-width: 0;
-    }
-
-    .subtitle {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
+      gap: 8px;
+      justify-content: center;
     }
 
     main {
@@ -90,13 +86,11 @@
 
     .toolbar {
       display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      flex-wrap: wrap;
+      justify-content: center;
       gap: 6px;
-      margin-top: 12px;
+      margin-top: 8px;
       max-width: 100%;
-      padding-bottom: 4px;
     }
 
     .toolbar::-webkit-scrollbar {
@@ -105,12 +99,12 @@
 
     .toolbar button,
     .toolbar .button-link {
-      flex: 1 0 auto;
+      flex: 0 0 auto;
       white-space: nowrap;
-      padding: 8px 10px !important;
-      font-size: 13px !important;
-      min-height: 36px !important;
-      height: 36px !important;
+      padding: 6px 12px !important;
+      font-size: 12px !important;
+      min-height: 32px !important;
+      height: 32px !important;
     }
 
     button,
@@ -573,8 +567,7 @@
 </head>
 <body>
   <header>
-    <h1 class="title-line"><img class="title-mark" src="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" alt="">烘豆曲線紀錄手機板</h1>
-    <p class="subtitle">手機輸入優先：單鍋分頁、卡片式紀錄、疊圖與單鍋曲線都保留。</p>
+    <h1 class="title-line"><img class="title-mark" src="./assets/icons/coffee-bean-icon.png?v=bean-gen-1" alt="">烘豆曲線</h1>
     <div class="toolbar">
       <button class="secondary" id="save-record-button" type="button">保存本次</button>
       <button class="ghost" id="history-toggle-button" type="button">查看前次</button>
