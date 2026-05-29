@@ -29,8 +29,7 @@
 
     * { box-sizing: border-box; }
 
-    html,
-    body {
+    html {
       overflow-x: hidden;
     }
 
@@ -81,7 +80,6 @@
       width: min(calc(100% - 20px), 720px);
       margin: 0 auto;
       padding: 12px 0 32px;
-      overflow-x: hidden;
     }
 
     .toolbar {
@@ -434,7 +432,7 @@
 
     .summary-row {
       display: grid;
-      grid-template-columns: 1.05fr repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(120px, 1.4fr) repeat(3, minmax(100px, 1fr));
       border-bottom: 1px solid var(--line);
     }
 
@@ -468,6 +466,12 @@
     .summary-table-wrap {
       width: 100%;
       min-width: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .summary-list {
+      min-width: 480px;
     }
 
     .log-list,
