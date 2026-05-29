@@ -1,8 +1,7 @@
-const CACHE_NAME = "coffee-roast-compare-v36";
+const CACHE_NAME = "coffee-roast-compare-v37";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.html",
   "./mobile.html",
   "./manifest.json",
   "./assets/icons/coffee-bean-icon.png",
@@ -36,7 +35,7 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
       }).catch(() =>
-        caches.match(event.request).then((cached) => cached || caches.match("./mobile.html"))
+        caches.match(event.request).then((cached) => cached || caches.match("./index.html"))
       )
     )
   );
