@@ -345,9 +345,14 @@
     select { min-height: 42px; }
 
     textarea {
-      min-height: 86px;
-      resize: vertical;
-      line-height: 1.5;
+      min-height: 36px;
+      resize: none !important;
+      overflow-y: hidden !important;
+      line-height: 1.4;
+    }
+
+    textarea::-webkit-resizer {
+      display: none !important;
     }
 
     .chart {
@@ -589,9 +594,7 @@
         font-size: 16px !important;
       }
 
-      textarea {
-        min-height: 36px;
-      }
+
 
       .log-table-mobile th,
       .log-table-mobile td {
@@ -1514,6 +1517,15 @@
       document.querySelector(`[data-field="decision.conclusion"]`).value = state.decision.conclusion;
     }
 
+    function adjustAllTextareaHeights() {
+      setTimeout(() => {
+        document.querySelectorAll("textarea").forEach((el) => {
+          el.style.height = "auto";
+          el.style.height = el.scrollHeight + "px";
+        });
+      }, 0);
+    }
+
     function renderTabs() {
       batchTabs.innerHTML = state.batches.map((batch, index) => `
         <button class="tab ${state.activeBatch === index ? "active" : ""}" type="button" data-tab="${index}" style="border-color:${state.activeBatch === index ? colors[index] : ""}">
@@ -1645,6 +1657,7 @@
         </div>
       `;
       renderSingleChart();
+      adjustAllTextareaHeights();
     }
 
     function renderCupping() {
@@ -1698,6 +1711,7 @@
           </div>
         </div>
       `;
+      adjustAllTextareaHeights();
     }
 
     function drawChart(svg, series, title) {
@@ -1840,6 +1854,7 @@
       renderRoastSummary();
       renderSingleChart();
       renderHistoryList();
+      adjustAllTextareaHeights();
     }
 
     function getHistoryRecords() {
@@ -1959,6 +1974,10 @@
       if (event.target.dataset.cupping) {
         updateCuppingField(Number(event.target.dataset.cupping), event.target.dataset.field, event.target.value);
         return;
+      }
+      if (event.target.tagName === "TEXTAREA") {
+        event.target.style.height = "auto";
+        event.target.style.height = event.target.scrollHeight + "px";
       }
       save();
       if (event.target.dataset.batchField === "name") renderTabs();
