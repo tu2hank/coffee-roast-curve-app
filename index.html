@@ -208,7 +208,16 @@
       padding: 14px;
     }
 
-    .field-grid,
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .wide {
+      grid-column: span 2;
+    }
+
     .mini-grid {
       display: grid;
       gap: 10px;
@@ -270,6 +279,7 @@
       border-bottom: 1px solid var(--line);
       font-size: 13px;
       vertical-align: middle;
+      white-space: nowrap;
     }
 
     .log-table-mobile th {
@@ -565,9 +575,40 @@
     }
 
     @media (min-width: 560px) {
-      .field-grid { grid-template-columns: 1fr 1fr; }
-      .wide { grid-column: span 2; }
       .chart { height: 430px; }
+    }
+
+    @media (max-width: 560px) {
+      label {
+        font-size: 14px;
+      }
+      
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+
+      textarea {
+        min-height: 54px;
+      }
+
+      .log-table-mobile th,
+      .log-table-mobile td {
+        font-size: 14px;
+      }
+
+      .log-table-mobile input,
+      .log-table-mobile select {
+        font-size: 14px !important;
+        min-height: 36px !important;
+        height: 36px !important;
+      }
+      
+      .cupping-list input,
+      .cupping-list select {
+        font-size: 14px !important;
+      }
     }
 
     @media (max-width: 430px) {
@@ -613,10 +654,10 @@
         <div class="status" id="status">已自動保存</div>
       </div>
       <div class="content field-grid">
-        <label>日期
+        <label class="wide">日期
           <input data-field="bean.date" type="date">
         </label>
-        <label>生豆品項
+        <label class="wide">生豆品項
           <input data-field="bean.beanItem" type="text" placeholder="例如：耶加雪菲 水洗">
         </label>
 
@@ -924,7 +965,7 @@
         cupping: Object.fromEntries(cuppingFields.map((field) => [field, ""]))
       };
     }
-    function createState() {
+    function createDemoState() {
       return {
         bean: {
           date: "2026-05-14",
@@ -936,7 +977,7 @@
         appVersion: STATE_VERSION,
         batches: [
           {
-            name: "第 1 鍋 (火力 0.7/0.6)",
+            name: "第 1 鍋",
             strategy: "中火力進豆，後期微降",
             targetRoast: "淺中烘焙",
             actualRoast: "淺中烘焙",
@@ -978,7 +1019,7 @@
             cupping: { aroma: "8.5", acidity: "8.25", sweetness: "8.5", bodyFeel: "8.0", finish: "8.25", score: "83.5", judgement: "花果香濃郁，酸質明亮，甜度表現優秀。" }
           },
           {
-            name: "第 2 鍋 (火力 0.8/0.7)",
+            name: "第 2 鍋",
             strategy: "大火力進豆，維持高RoR",
             targetRoast: "淺烘焙",
             actualRoast: "淺烘焙",
@@ -1019,7 +1060,7 @@
             cupping: { aroma: "8.75", acidity: "8.5", sweetness: "8.25", bodyFeel: "7.75", finish: "8.0", score: "84.25", judgement: "茉莉花香與檸檬酸值極佳，但厚實度略薄。" }
           },
           {
-            name: "第 3 鍋 (火力 0.6/0.6)",
+            name: "第 3 鍋",
             strategy: "小火力柔和烘焙，拉長脫水",
             targetRoast: "中烘焙",
             actualRoast: "中烘焙",
@@ -1069,10 +1110,33 @@
       };
     }
 
-    let state = createState();
+    function createBlankState() {
+      return {
+        bean: {
+          date: today(),
+          beanItem: "",
+          hypothesis: "",
+          roomTemp: "",
+          roomHumidity: ""
+        },
+        appVersion: STATE_VERSION,
+        batches: [
+          createBatch(0),
+          createBatch(1),
+          createBatch(2)
+        ],
+        activeBatch: 0,
+        decision: {
+          winner: "",
+          conclusion: ""
+        }
+      };
+    }
+
+    let state = createBlankState();
 
     function normalizeState(saved) {
-      const fresh = createState();
+      const fresh = createBlankState();
       if (!saved || typeof saved !== "object") return fresh;
       const shouldResetEnabled = saved.appVersion !== STATE_VERSION;
       return {
@@ -1101,8 +1165,8 @@
     function load() {
       try {
         const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        state = raw && hasAnyTempData(raw) ? normalizeState(raw) : createState();
-      } catch { state = createState(); }
+        state = raw ? normalizeState(raw) : createDemoState();
+      } catch { state = createBlankState(); }
     }
     function normalizeMilestones(savedMilestones, freshMilestones) {
       if (!Array.isArray(savedMilestones)) return freshMilestones;
@@ -1470,8 +1534,8 @@
         </div>
 
         <div class="card content field-grid">
-          <label>鍋次名稱<input data-batch="${index}" data-batch-field="name" value="${escapeHtml(batch.name)}"></label>
-          <label>烘法策略<input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}"></label>
+          <label class="wide">鍋次名稱<input data-batch="${index}" data-batch-field="name" value="${escapeHtml(batch.name)}"></label>
+          <label class="wide">烘法策略<input data-batch="${index}" data-batch-field="strategy" value="${escapeHtml(batch.strategy)}"></label>
           <label>預計烘焙<input data-batch="${index}" data-batch-field="targetRoast" value="${escapeHtml(batch.targetRoast)}"></label>
           <label>實際烘焙<input data-batch="${index}" data-batch-field="actualRoast" value="${escapeHtml(batch.actualRoast)}"></label>
           <label>生豆量 g<input data-batch="${index}" data-batch-field="greenWeight" value="${escapeHtml(batch.greenWeight)}" type="number" min="0" step="0.1"></label>
@@ -1482,8 +1546,8 @@
         </div>
 
         <div class="card content" style="padding: 12px 8px;">
-          <div class="section-head" style="padding: 0 6px 10px; border-bottom: 0;">
-            <h3>30 秒紀錄</h3>
+          <div class="section-head" style="padding: 0 6px 10px; border-bottom: 0; flex-wrap: nowrap !important;">
+            <h3 style="margin: 0;">30 秒紀錄</h3>
             <button class="ghost" type="button" data-add-log="${index}">＋ 新增</button>
           </div>
           <div class="table-scroll-container">
@@ -1980,7 +2044,7 @@
     document.querySelector("#history-toggle-button").addEventListener("click", toggleHistory);
     document.querySelector("#clear-button").addEventListener("click", () => {
       if (!window.confirm("確定要清除所有數據嗎？")) return;
-      state = createState();
+      state = createBlankState();
       renderAll();
       save();
     });
