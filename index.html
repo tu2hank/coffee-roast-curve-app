@@ -708,7 +708,7 @@
       </div>
       <div class="content stack">
         <div class="cupping-list" id="cupping-list"></div>
-        <div style="display: grid; grid-template-columns: 130px 1fr; gap: 8px; align-items: center; margin-top: 10px;">
+        <div style="display: grid; grid-template-columns: 130px 1fr; gap: 8px; align-items: flex-start; margin-top: 10px;">
           <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: #4a3d34;">風味最佳的烘焙
             <select data-field="decision.winner" style="height: 34px; min-height: 34px; font-size: 13px; padding: 6px 8px; border-radius: 6px;">
               <option value="">尚未決定</option>
@@ -718,7 +718,7 @@
             </select>
           </label>
           <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: #4a3d34;">結論與下次調整
-            <input data-field="decision.conclusion" placeholder="風味最佳原因，與下次調整方向。" style="height: 34px; min-height: 34px; font-size: 13px; padding: 6px 8px; border-radius: 6px; width: 100%;">
+            <textarea data-field="decision.conclusion" placeholder="風味最佳原因，與下次調整方向。" style="height: 54px; min-height: 54px; font-size: 13px; padding: 6px 8px; border-radius: 6px; width: 100%; resize: vertical; line-height: 1.4;"></textarea>
           </label>
         </div>
       </div>
@@ -1689,7 +1689,7 @@
                       <input data-cupping="${index}" data-field="score" value="${escapeHtml(batch.cupping.score)}">
                     </td>
                     <td>
-                      <input data-cupping="${index}" data-field="judgement" value="${escapeHtml(batch.cupping.judgement)}" style="text-align: left; padding: 4px 6px !important;">
+                      <textarea data-cupping="${index}" data-field="judgement" style="text-align: left; padding: 6px 8px !important; min-height: 52px; height: 52px; font-size: 13px !important; resize: vertical; width: 100%; border-radius: 6px; border: 1px solid rgba(220,199,173,0.15); background: #1c1815; color: var(--ink); line-height: 1.4; white-space: normal !important; overflow-y: auto;">${escapeHtml(batch.cupping.judgement)}</textarea>
                     </td>
                   </tr>
                 `).join("")}
