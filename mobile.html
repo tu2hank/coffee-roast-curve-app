@@ -514,33 +514,50 @@
     }
 
     .chart-toggles {
-      display: grid;
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       margin-top: 10px;
       max-width: 100%;
+    }
+
+    .batch-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--line);
+      background: #1c1815;
       color: var(--muted);
       font-size: 13px;
       font-weight: 700;
-    }
-
-    .checkline {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .checkline input[type="checkbox"] {
-      width: 18px !important;
-      min-width: 18px !important;
-      min-height: 18px !important;
-      height: 18px !important;
-      padding: 0 !important;
-      border: none !important;
-      background: transparent !important;
-      -webkit-appearance: checkbox !important;
-      appearance: checkbox !important;
-      flex-shrink: 0;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      min-height: 40px;
+      touch-action: manipulation;
+    }
+
+    .batch-toggle.active {
+      background: #261e18;
+      border-color: currentColor;
+    }
+
+    .batch-toggle .toggle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.35;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+
+    .batch-toggle.active .toggle-dot {
+      opacity: 1;
     }
 
     @media (min-width: 560px) {
@@ -1672,12 +1689,13 @@
       const series = state.batches.map((batch, index) => ({ batch, index, points: chartPoints(batch), endTime: chartEndTime(batch) })).filter((item) => item.batch.enabled && item.points.length >= 2);
       drawChart(chart, series, "三鍋曲線比較");
       document.querySelector("#chart-toggles").innerHTML = state.batches.map((batch, index) => `
-        <label class="checkline">
-          <input type="checkbox" data-batch-enabled="${index}" ${batch.enabled ? "checked" : ""}>
-          <span style="color:${colors[index]}">${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}</span>
-        </label>
+        <button type="button" class="batch-toggle ${batch.enabled ? 'active' : ''}" data-toggle-batch="${index}" style="color:${colors[index]}">
+          <span class="toggle-dot"></span>
+          ${escapeHtml(batch.name || `第 ${index + 1} 鍋`)}
+        </button>
       `).join("");
     }
+
 
     function keySummaryRows() {
       return [
@@ -1903,13 +1921,19 @@
         updateCuppingField(Number(event.target.dataset.cupping), event.target.dataset.field, event.target.value);
         return;
       }
-      if (event.target.dataset.batchEnabled !== undefined) {
-        state.batches[Number(event.target.dataset.batchEnabled)].enabled = event.target.checked;
+    });
+
+    document.addEventListener("click", (event) => {
+      const toggleBtn = event.target.closest("[data-toggle-batch]");
+      if (toggleBtn) {
+        const index = Number(toggleBtn.dataset.toggleBatch);
+        state.batches[index].enabled = !state.batches[index].enabled;
         renderCharts();
         renderRoastSummary();
         save();
+        return;
       }
-    });
+    }, true);
 
     document.addEventListener("click", (event) => {
       const tab = event.target.closest("[data-tab]");
