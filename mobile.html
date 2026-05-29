@@ -529,10 +529,18 @@
       gap: 8px;
     }
 
-    .checkline input {
-      width: 18px;
-      min-height: 18px;
-      height: 18px;
+    .checkline input[type="checkbox"] {
+      width: 18px !important;
+      min-width: 18px !important;
+      min-height: 18px !important;
+      height: 18px !important;
+      padding: 0 !important;
+      border: none !important;
+      background: transparent !important;
+      -webkit-appearance: checkbox !important;
+      appearance: checkbox !important;
+      flex-shrink: 0;
+      cursor: pointer;
     }
 
     @media (min-width: 560px) {
@@ -1066,9 +1074,14 @@
         decision: { ...fresh.decision, ...(saved.decision || {}) }
       };
     }
+    function hasAnyTempData(s) {
+      return s?.batches?.some((batch) => batch?.logs?.some((log) => log?.temp));
+    }
     function load() {
-      try { state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")); }
-      catch { state = createState(); }
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        state = raw && hasAnyTempData(raw) ? normalizeState(raw) : createState();
+      } catch { state = createState(); }
     }
     function normalizeMilestones(savedMilestones, freshMilestones) {
       if (!Array.isArray(savedMilestones)) return freshMilestones;
@@ -1890,8 +1903,10 @@
         updateCuppingField(Number(event.target.dataset.cupping), event.target.dataset.field, event.target.value);
         return;
       }
-      if (event.target.dataset.batchEnabled) {
+      if (event.target.dataset.batchEnabled !== undefined) {
         state.batches[Number(event.target.dataset.batchEnabled)].enabled = event.target.checked;
+        renderCharts();
+        renderRoastSummary();
         save();
       }
     });
